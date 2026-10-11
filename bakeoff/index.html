@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Model bake-off</title>
+  <style>
+    body { font: 15px/1.45 system-ui, sans-serif; max-width: 1100px; margin: 24px auto; padding: 0 16px; }
+    h1 { font-size: 20px; }
+    .bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 12px 0; }
+    button, select { font: inherit; padding: 6px 12px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 6px 8px; vertical-align: top; text-align: left; }
+    td.mono { font-family: ui-monospace, monospace; font-size: 13px; white-space: pre-wrap; }
+    .bad { background: #fde8e8; }
+    .ok { background: #e6f4ea; }
+    #status { color: #555; }
+  </style>
+</head>
+<body>
+  <h1>Model bake-off: rewrite quality on 15 placeholder prompts</h1>
+  <p>
+    Runs entirely in this tab with WebGPU. Pick a model, load it, run the 15 prompts, tick
+    <em>Meaning kept</em> for each rewrite you judge good, then download the CSV. Do this once per model
+    and compare. The leak and placeholder checks are automatic.
+  </p>
+
+  <div class="bar">
+    <label>Model
+      <select id="model">
+        <option>Llama-3.2-1B-Instruct-q4f16_1-MLC</option>
+        <option>Qwen2.5-1.5B-Instruct-q4f16_1-MLC</option>
+        <option>Qwen3-0.6B-q4f16_1-MLC</option>
+        <option>Llama-3.2-3B-Instruct-q4f16_1-MLC</option>
+      </select>
+    </label>
+    <button id="load">Load model</button>
+    <button id="run" disabled>Run all 15</button>
+    <button id="csv" disabled>Download CSV</button>
+    <span id="status">Not loaded.</span>
+  </div>
+  <p id="summary"></p>
+
+  <table>
+    <thead>
+      <tr><th>#</th><th>Input (masked)</th><th>Model output</th><th>Leak?</th><th>Placeholders kept</th><th>ms</th><th>Meaning kept</th></tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+
+  <script type="module">
+    import * as webllm from 'https://esm.run/@mlc-ai/web-llm';
+
+    // Keep in sync with REWRITE_SYSTEM_PROMPT in lib/rewrite.ts.
+    const SYSTEM =
+      'You rewrite messages for privacy. The message contains placeholders in square brackets such as [EMAIL_1] or [PERSON_1]. ' +
+      'Rewrite it so it reads naturally and keeps the question or request, but keep every placeholder exactly as written. ' +
+      'Never replace a placeholder with a real value and never invent personal details. Output only the rewritten message.';
+
+    const $ = (id) => document.getElementById(id);
+    let engine = null;
+    let loadedModel = '';
+    let prompts = [];
+    const results = new Map();
+
+    fetch('prompts.json').then((r) => r.json()).then((p) => { prompts = p; render(); });
+
+    function render() {
+      const rows = $('rows');
+      rows.replaceChildren();
+      for (const p of prompts) {
+        const r = results.get(p.id);
+        const tr = document.createElement('tr');
+        const cells = [p.id, p.masked, r?.output ?? '', r ? (r.leak ? 'LEAK' : 'none') : '', r ? `${r.kept}/${r.total}` : '', r ? r.ms : ''];
+        cells.forEach((c, i) => {
+          const td = document.createElement('td');
+          td.textContent = c;
+          if (i === 1 || i === 2) td.className = 'mono';
+          if (i === 3 && r) td.className = r.leak ? 'bad' : 'ok';
+          if (i === 4 && r) td.className = r.kept === r.total ? 'ok' : 'bad';
+          tr.append(td);
+        });
+        const td = document.createElement('td');
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.checked = !!r?.good;
+        box.disabled = !r;
+        box.addEventListener('change', () => { r.good = box.checked; summarize(); });
+        td.append(box);
+        tr.append(td);
+        rows.append(tr);
+      }
+      summarize();
+    }
+
+    function summarize() {
+      const rs = [...results.values()];
+      if (!rs.length) { $('summary').textContent = ''; return; }
+      const leaks = rs.filter((r) => r.leak).length;
+      const kept = rs.filter((r) => r.kept === r.total).length;
+      const good = rs.filter((r) => r.good).length;
+      const avg = Math.round(rs.reduce((a, r) => a + r.ms, 0) / rs.length);
+      $('summary').textContent =
+        `${loadedModel}: leaks ${leaks}/${rs.length}, all placeholders kept ${kept}/${rs.length}, meaning kept ${good}/${rs.length}, average ${avg} ms.`;
+    }
+
+    $('load').addEventListener('click', async () => {
+      $('load').disabled = true;
+      $('status').textContent = 'Loading (first time downloads the model)...';
+      try {
+        const model = $('model').value;
+        engine = await webllm.CreateMLCEngine(model, {
+          initProgressCallback: (p) => { $('status').textContent = p.text; },
+        });
+        loadedModel = model;
+        results.clear();
+        render();
+        $('status').textContent = `Loaded ${model}.`;
+        $('run').disabled = false;
+      } catch (err) {
+        $('status').textContent = `Load failed: ${err}`;
+      } finally {
+        $('load').disabled = false;
+      }
+    });
+
+    $('run').addEventListener('click', async () => {
+      $('run').disabled = true;
+      results.clear();
+      for (const p of prompts) {
+        $('status').textContent = `Running ${p.id}/${prompts.length}...`;
+        const t0 = performance.now();
+        const reply = await engine.chat.completions.create({
+          messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: p.masked }],
+          temperature: 0.2,
+          max_tokens: 400,
+        });
+        const ms = Math.round(performance.now() - t0);
+        const output = (reply.choices[0]?.message?.content ?? '').trim();
+        const lower = output.toLowerCase();
+        const leak = p.originals.some((o) => lower.includes(o.toLowerCase()));
+        const placeholders = p.masked.match(/\[[A-Z_]+_\d+\]/g) ?? [];
+        const kept = placeholders.filter((ph) => output.includes(ph)).length;
+        results.set(p.id, { output, leak, kept, total: placeholders.length, ms, good: false });
+        render();
+      }
+      $('status').textContent = 'Done. Tick Meaning kept for good rewrites, then download the CSV.';
+      $('run').disabled = false;
+      $('csv').disabled = false;
+    });
+
+    $('csv').addEventListener('click', () => {
+      const esc = (s) => `"${String(s).replaceAll('"', '""')}"`;
+      const lines = [['model', 'id', 'leak', 'placeholders_kept', 'placeholders_total', 'meaning_kept', 'ms', 'output'].join(',')];
+      for (const p of prompts) {
+        const r = results.get(p.id);
+        if (!r) continue;
+        lines.push([esc(loadedModel), p.id, r.leak, r.kept, r.total, r.good, r.ms, esc(r.output)].join(','));
+      }
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/csv' }));
+      a.download = `bakeoff-${loadedModel}.csv`;
+      a.click();
+    });
+  </script>
+</body>
+</html>

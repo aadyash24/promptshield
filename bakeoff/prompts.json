@@ -1,0 +1,17 @@
+[
+  { "id": 1, "masked": "Can you help me write an email to [PERSON_1] at [EMAIL_1] asking to move our meeting to Friday?", "originals": ["Jane Doe", "jane.doe@example.com"] },
+  { "id": 2, "masked": "My phone number is [PHONE_1]. Draft a voicemail greeting that includes it.", "originals": ["865-555-0142"] },
+  { "id": 3, "masked": "I live at [ADDRESS_1]. What are good ways to winterize an older home?", "originals": ["412 Maple Court"] },
+  { "id": 4, "masked": "Write a cover letter for [PERSON_1] applying to [ORG_1] as a data analyst.", "originals": ["Priya Raman", "Northwind Analytics"] },
+  { "id": 5, "masked": "Why does my script fail when I set the API key to [API_KEY_1]?", "originals": ["sk-Ab3dE6gH9jK2mN5pQ8sT1vX4zC7"] },
+  { "id": 6, "masked": "My SSN is [SSN_1]. How do I know if my identity was stolen?", "originals": ["123-45-6789"] },
+  { "id": 7, "masked": "Summarize this note: [PERSON_1] called from [PHONE_1] about the unpaid invoice from [ORG_1].", "originals": ["Marcus Bell", "865-555-0188", "Bright Path Dental"] },
+  { "id": 8, "masked": "Help me budget. My card [CARD_1] was charged twice at the same store.", "originals": ["4111 1111 1111 1111"] },
+  { "id": 9, "masked": "[PERSON_1] and [PERSON_2] want to split rent at [ADDRESS_1]. How should we divide it fairly?", "originals": ["Tom Alvarez", "Lena Ortiz", "88 Harbor Street"] },
+  { "id": 10, "masked": "Translate to Spanish: Please send the signed form to [EMAIL_1] by Monday.", "originals": ["records@clinic-example.org"] },
+  { "id": 11, "masked": "I work at [ORG_1] and my manager [PERSON_1] keeps changing deadlines. How do I raise it politely?", "originals": ["Harlow Logistics", "Dana Whitfield"] },
+  { "id": 12, "masked": "Check my reasoning: I was born in [ADDRESS_1] and my email is [EMAIL_1], so my security question is weak, right?", "originals": ["Greenville", "sam.k@example.com"] },
+  { "id": 13, "masked": "Write a thank-you note to [PERSON_1], who helped me move into [ADDRESS_1].", "originals": ["Aisha Khan", "17 Orchard Lane"] },
+  { "id": 14, "masked": "Rewrite this politely: [PERSON_1], call me back at [PHONE_1] right now.", "originals": ["Owen Price", "865-555-0170"] },
+  { "id": 15, "masked": "My token is [API_KEY_1] and my email is [EMAIL_1]. Is it safe to paste these into a public issue?", "originals": ["ghp_a1B2c3D4e5a1B2c3D4e5a1B2c3D4e5a1B2c3D4e5", "dev@example.com"] }
+]
