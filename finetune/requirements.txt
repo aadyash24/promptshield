@@ -1,0 +1,7 @@
+# Training and model evaluation (Colab already has torch)
+transformers
+peft
+accelerate
+# Only needed to regenerate the dataset (the generated files are already committed)
+faker
+pytest

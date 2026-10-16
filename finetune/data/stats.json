@@ -1,0 +1,104 @@
+{
+  "train": {
+    "records": 3200,
+    "kinds": {
+      "negative": 1093,
+      "sensitive": 1803,
+      "compound": 304
+    },
+    "findings": 3812,
+    "by_tier": {
+      "1": 1066,
+      "2": 1815,
+      "3": 931
+    },
+    "by_category": {
+      "BALANCE_DEBT": 258,
+      "BANK_ACCOUNT": 59,
+      "CARD_NUMBER": 51,
+      "CREDENTIAL": 312,
+      "DATE_OF_BIRTH": 258,
+      "EMAIL": 263,
+      "FIN_INSTITUTION": 48,
+      "GOV_ID": 239,
+      "HOME_ADDRESS": 235,
+      "INCOME": 120,
+      "MEDICATION": 153,
+      "MED_CONDITION": 297,
+      "MED_PROVIDER": 116,
+      "MED_RECORD_ID": 188,
+      "PERSON_NAME": 670,
+      "PHONE": 231,
+      "SENSITIVE_HEALTH": 82,
+      "WORKPLACE_SCHOOL": 232
+    }
+  },
+  "val": {
+    "records": 300,
+    "kinds": {
+      "sensitive": 182,
+      "negative": 82,
+      "compound": 36
+    },
+    "findings": 425,
+    "by_tier": {
+      "1": 131,
+      "2": 195,
+      "3": 99
+    },
+    "by_category": {
+      "BALANCE_DEBT": 18,
+      "BANK_ACCOUNT": 8,
+      "CARD_NUMBER": 7,
+      "CREDENTIAL": 34,
+      "DATE_OF_BIRTH": 30,
+      "EMAIL": 29,
+      "FIN_INSTITUTION": 5,
+      "GOV_ID": 30,
+      "HOME_ADDRESS": 29,
+      "INCOME": 12,
+      "MEDICATION": 14,
+      "MED_CONDITION": 26,
+      "MED_PROVIDER": 17,
+      "MED_RECORD_ID": 16,
+      "PERSON_NAME": 78,
+      "PHONE": 37,
+      "SENSITIVE_HEALTH": 4,
+      "WORKPLACE_SCHOOL": 31
+    }
+  },
+  "test": {
+    "records": 500,
+    "kinds": {
+      "sensitive": 260,
+      "negative": 204,
+      "compound": 36
+    },
+    "findings": 617,
+    "by_tier": {
+      "1": 195,
+      "2": 275,
+      "3": 147
+    },
+    "by_category": {
+      "BALANCE_DEBT": 30,
+      "BANK_ACCOUNT": 31,
+      "CARD_NUMBER": 25,
+      "CREDENTIAL": 46,
+      "DATE_OF_BIRTH": 30,
+      "EMAIL": 24,
+      "FIN_INSTITUTION": 49,
+      "GOV_ID": 19,
+      "HOME_ADDRESS": 30,
+      "INCOME": 30,
+      "MEDICATION": 20,
+      "MED_CONDITION": 87,
+      "MED_PROVIDER": 28,
+      "MED_RECORD_ID": 13,
+      "PERSON_NAME": 94,
+      "PHONE": 24,
+      "SENSITIVE_HEALTH": 13,
+      "WORKPLACE_SCHOOL": 24
+    }
+  }
+}

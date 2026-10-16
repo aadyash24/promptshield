@@ -4,3 +4,8 @@ node_modules
 *.zip
 .env
 .DS_Store
+
+finetune/out/
+finetune/__pycache__/
+finetune/**/__pycache__/
+.pytest_cache/
