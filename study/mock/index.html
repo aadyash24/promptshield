@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ChatAssist (practice)</title>
+<style>
+:root{color-scheme:light;--bg:#f4f5f7;--panel:#fff;--fg:#1d2733;--muted:#5d6b79;--line:#d9dee4;--accent:#2457c5;--me:#e3ecff;--bot:#f0f2f5}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column}
+header{padding:10px 20px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}
+header b{font-size:16px}
+header span{color:var(--muted);font-size:13px}
+main{flex:1;min-height:0;display:grid;grid-template-columns:320px 1fr;gap:16px;padding:16px 20px}
+aside{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;overflow:auto}
+aside h2{margin:0 0 4px;font-size:16px}
+aside .step{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:0 0 8px}
+aside .task{margin:0 0 14px}
+dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13.5px}
+dt{color:var(--muted)} dd{margin:0;overflow-wrap:anywhere}
+pre.code{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0 0}
+section.chat{display:flex;flex-direction:column;min-height:0;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+#log{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:78%;padding:10px 14px;border-radius:12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.user{align-self:flex-end;background:var(--me)}
+.msg.bot{align-self:flex-start;background:var(--bot)}
+.hint{color:var(--muted);text-align:center;margin:auto}
+.composer{border-top:1px solid var(--line);padding:12px;display:flex;gap:10px;align-items:flex-end}
+#prompt{flex:1;min-height:48px;max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:10px 12px;outline:none;white-space:pre-wrap}
+#prompt:focus{border-color:var(--accent);box-shadow:0 0 0 2px #2457c533}
+#prompt:empty::before{content:attr(data-placeholder);color:var(--muted)}
+button{font:inherit;font-weight:600;border-radius:10px;border:1px solid transparent;padding:10px 16px;cursor:pointer;background:var(--accent);color:#fff}
+button.secondary{background:transparent;color:var(--fg);border-color:var(--line)}
+button:disabled{opacity:.5;cursor:default}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.center{margin:auto;max-width:460px;text-align:center;padding:24px}
+.center h1{font-size:22px;margin:0 0 8px}
+.center p{color:var(--muted)}
+[hidden]{display:none!important}
+@media (max-width:760px){main{grid-template-columns:1fr;overflow:auto}aside{max-height:none}}
+</style>
+</head>
+<body>
+<header><b>ChatAssist</b><span id="who">Practice session</span></header>
+
+<main id="intro-wrap">
+  <div class="center" id="intro" style="grid-column:1/-1">
+    <h1>Welcome</h1>
+    <p>You will do a few short tasks with a practice AI assistant. Each task gives you a made-up person with a profile. Act as that person and use the assistant like you normally would.</p>
+    <p>Replies in this practice version are pre-written.</p>
+    <button id="start">Start</button>
+  </div>
+</main>
+
+<main id="app" hidden>
+  <aside>
+    <p class="step" id="step"></p>
+    <h2 id="pname"></h2>
+    <p class="task" id="ptask"></p>
+    <dl id="pdata"></dl>
+    <pre class="code" id="pcode" hidden></pre>
+  </aside>
+  <section class="chat">
+    <div id="log"><p class="hint" id="hint">Type your message below.</p></div>
+    <div class="composer">
+      <div id="prompt" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Message" data-placeholder="Message ChatAssist"></div>
+      <button id="send">Send</button>
+      <button id="next" class="secondary" hidden>Next task</button>
+    </div>
+  </section>
+</main>
+
+<main id="done" hidden>
+  <div class="center" style="grid-column:1/-1">
+    <h1>All done</h1>
+    <p>Thank you. Please tell the researcher you have finished.</p>
+  </div>
+</main>
+
+<script>
+(function () {
+  // Fictional people only. Every value below is made up.
+  var TASKS = [
+    { id: 'bank', name: 'Maya Okafor',
+      task: 'A store charged you twice for a $412 purchase. Ask the assistant to write a letter to your bank disputing the charge. Include whatever details you think the assistant needs.',
+      data: [['Address','2210 Linden Ave, Apt 4B, Knoxville, TN 37916'],['Phone','(865) 555-0142'],['Email','maya.okafor@example.com'],['Bank','Cedar Federal Bank'],['Card','4539 1488 0343 6467'],['SSN','527-61-3849'],['Yearly income','$54,000'],['Card balance','$3,280']],
+      reply: 'Here is a first draft you can edit:\n\nDear Cedar Federal Bank,\nI am writing to dispute a duplicate charge of $412 on my card. Please investigate and reverse the extra charge.\n\nThank you,\nMaya' },
+    { id: 'insurer', name: 'Daniel Reyes',
+      task: 'Your health insurer denied coverage for a glucose monitor your doctor prescribed. Ask the assistant to help you write an appeal. Include whatever details you think the assistant needs.',
+      data: [['Date of birth','03/14/1988'],['Insurer','Blue Harbor Health'],['Member ID','BH-7741920'],['Doctor','Dr. Anita Shah, Riverbend Medical Group'],['Condition','Type 2 diabetes'],['Medication','Metformin 500 mg'],['Phone','(865) 555-0177']],
+      reply: 'Here is a first draft of your appeal:\n\nTo the Appeals Department,\nI am requesting a review of the denial of my prescribed glucose monitor. My doctor considers it medically necessary.\n\nSincerely,\nDaniel' },
+    { id: 'rental', name: 'Priya Nair',
+      task: 'You are applying for an apartment. Ask the assistant to write a short note to the landlord that makes your application stand out. Include whatever details you think the assistant needs.',
+      data: [['Date of birth','09/02/1996'],['Employer','Halvorsen Analytics'],['Job title','Data analyst'],['Yearly income','$78,500'],['Current address','418 Mercer St, Unit 12, Nashville, TN 37203'],['Email','priya.nair@example.com'],['Driver license','TN 4417-2290-81'],['SSN','486-72-1905']],
+      reply: 'Here is a short note you can adapt:\n\nDear Landlord,\nI am excited to apply for the apartment. I have stable employment, a clean rental history, and I take care of my home.\n\nThank you for considering me,\nPriya' },
+    { id: 'script', name: 'Marcus Bell',
+      task: 'Your weather script keeps failing with an authentication error. Ask the assistant to help you fix it. You can paste whatever you think is useful.',
+      data: [['Employer','Brightwave Labs'],['Work email','marcus.bell@example.com']],
+      code: 'import requests\n\nAPI_KEY = "sk-live-9fK2mQx7RtB4vLw8Zd3NpY6a"\nurl = "https://api.example-weather.test/v1/forecast"\nr = requests.get(url, params={"key": API_KEY, "city": "Knoxville"})\nprint(r.json())',
+      reply: 'Authentication errors usually mean the key is missing, expired, or sent in the wrong place. Check the key is active and that the service expects it as a header instead of a query parameter.' }
+  ];
+
+  var q = new URLSearchParams(location.search);
+  var pid = (q.get('pid') || 'unknown').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32) || 'unknown';
+  // Rotate the task order by participant so no task is always first.
+  var h = 0; for (var i = 0; i < pid.length; i++) h += pid.charCodeAt(i);
+  var order = TASKS.slice(h % TASKS.length).concat(TASKS.slice(0, h % TASKS.length));
+  var idx = -1;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var box = $('prompt'), log = $('log');
+  $('who').textContent = 'Practice session ' + pid;
+
+  function show(id) { ['intro-wrap', 'app', 'done'].forEach(function (k) { $(k).hidden = k !== id; }); }
+
+  function loadTask() {
+    var t = order[idx];
+    $('step').textContent = 'Task ' + (idx + 1) + ' of ' + order.length;
+    $('pname').textContent = t.name;
+    $('ptask').textContent = t.task;
+    var dl = $('pdata'); dl.textContent = '';
+    t.data.forEach(function (row) {
+      var dt = document.createElement('dt'); dt.textContent = row[0];
+      var dd = document.createElement('dd'); dd.textContent = row[1];
+      dl.append(dt, dd);
+    });
+    var code = $('pcode'); code.hidden = !t.code; code.textContent = t.code || '';
+    log.textContent = '';
+    var hint = document.createElement('p'); hint.className = 'hint'; hint.textContent = 'Type your message below.'; log.append(hint);
+    box.textContent = ''; $('send').disabled = false; $('next').hidden = true;
+    document.body.dataset.task = t.id;
+    document.body.dataset.taskStart = String(Date.now());
+    document.dispatchEvent(new CustomEvent('pw:task'));
+    box.focus();
+  }
+
+  function add(role, text) {
+    var hint = log.querySelector('.hint'); if (hint) hint.remove();
+    var m = document.createElement('div'); m.className = 'msg ' + role; m.textContent = text; log.append(m);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function send() {
+    var text = (box.innerText || '').trim();
+    if (!text || $('send').disabled) return;
+    // The extension (if installed) reads the box on this event, before it is cleared.
+    document.dispatchEvent(new CustomEvent('pw:send'));
+    add('user', text);
+    box.textContent = '';
+    box.dispatchEvent(new Event('input', { bubbles: true }));
+    $('send').disabled = true;
+    setTimeout(function () {
+      add('bot', order[idx].reply);
+      $('next').textContent = idx === order.length - 1 ? 'Finish' : 'Next task';
+      $('next').hidden = false;
+    }, 700);
+  }
+
+  $('start').addEventListener('click', function () { idx = 0; show('app'); setTimeout(loadTask, 600); });
+  $('send').addEventListener('click', send);
+  box.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+  box.addEventListener('paste', function (e) {
+    e.preventDefault();
+    var t = (e.clipboardData || window.clipboardData).getData('text/plain');
+    document.execCommand('insertText', false, t);
+  });
+  $('next').addEventListener('click', function () {
+    if (idx === order.length - 1) { show('done'); return; }
+    idx += 1; loadTask();
+  });
+})();
+</script>
+</body>
+</html>

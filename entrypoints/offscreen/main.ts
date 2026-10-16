@@ -1,5 +1,4 @@
 import { CreateMLCEngine, type MLCEngine } from '@mlc-ai/web-llm';
-import { glinerSpans } from '../../lib/gliner-adapter';
 import { REWRITE_SYSTEM_PROMPT } from '../../lib/rewrite';
 import type { OffscreenRequest, OffscreenResponse } from '../../lib/messages';
 
@@ -34,13 +33,6 @@ async function rewrite(masked: string): Promise<string> {
 chrome.runtime.onMessage.addListener(
   (msg: OffscreenRequest, _sender, sendResponse: (r: OffscreenResponse) => void) => {
     if (msg?.target !== 'offscreen') return false;
-
-    if (msg.type === 'gliner') {
-      glinerSpans(msg.text)
-        .then((spans) => sendResponse({ ok: true, spans }))
-        .catch((err) => sendResponse({ ok: false, error: String(err) }));
-      return true;
-    }
 
     if (msg.type === 'llm-rewrite') {
       rewrite(msg.masked)

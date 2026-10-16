@@ -1,4 +1,4 @@
-import { TYPE_LABEL, type PiiType, type Span } from './types';
+import { CATEGORY_LABEL, TYPE_LABEL, type Span } from './types';
 
 const HIGHLIGHT_NAME = 'privacy-warning';
 
@@ -133,12 +133,15 @@ export class WarningUI {
 
   showFound(anchor: HTMLElement, spans: Span[]): void {
     const card = this.ensureCard(anchor);
-    const counts = new Map<PiiType, number>();
-    for (const s of spans) counts.set(s.type, (counts.get(s.type) ?? 0) + 1);
+    const counts = new Map<string, number>();
+    for (const s of spans) {
+      const label = (s.category && CATEGORY_LABEL[s.category]) || TYPE_LABEL[s.type];
+      counts.set(label, (counts.get(label) ?? 0) + 1);
+    }
 
     const list = el('ul');
-    for (const [type, n] of counts) {
-      list.append(el('li', { text: n > 1 ? `${TYPE_LABEL[type]} (${n})` : TYPE_LABEL[type] }));
+    for (const [label, n] of counts) {
+      list.append(el('li', { text: n > 1 ? `${label} (${n})` : label }));
     }
     const rewrite = el('button', { text: 'Use safer version' });
     rewrite.addEventListener('click', () => this.actions.onRewrite());

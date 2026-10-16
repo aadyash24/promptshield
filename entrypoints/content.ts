@@ -1,13 +1,26 @@
 import { findEditable, rangesFor, readEditable, replaceEditableText, type Reading } from '../lib/dom';
-import type { AnalyzeResponse, RewriteResponse, SpansUpdate } from '../lib/messages';
-import type { Span } from '../lib/types';
+import type {
+  AnalyzeResponse,
+  CondResponse,
+  DetectFullResponse,
+  RewriteResponse,
+  SpansUpdate,
+  StudyEvent,
+} from '../lib/messages';
+import { categoryOf, tierOf, type Span } from '../lib/types';
 import { WarningUI } from '../lib/ui';
 
 const DEBOUNCE_MS = 300;
 const MIN_CHARS = 4;
 
 export default defineContentScript({
-  matches: ['*://chatgpt.com/*', '*://claude.ai/*', '*://gemini.google.com/*'],
+  matches: [
+    '*://chatgpt.com/*',
+    '*://claude.ai/*',
+    '*://gemini.google.com/*',
+    // Mock chat used in the user study, served by finetune/serve.py.
+    'http://127.0.0.1:8765/mock/*',
+  ],
   main() {
     // Privacy rule: prompt text is never logged and never stored. It only passes through memory.
     let timer: number | undefined;
@@ -17,15 +30,67 @@ export default defineContentScript({
     let spans: Span[] = [];
     let dismissedSig = '';
 
+    // Study mode (mock chat only). Logs events, never prompt text or detected values.
+    const study = location.origin === 'http://127.0.0.1:8765' && location.pathname.startsWith('/mock');
+    const q = new URLSearchParams(location.search);
+    const pid = (q.get('pid') ?? 'unknown').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32) || 'unknown';
+    // The condition is assigned by the local server so participants never see it in the URL.
+    // ?cond= is only a manual override for testing.
+    let cond: 'active' | 'silent' = q.get('cond') === 'silent' ? 'silent' : 'active';
+    let silent = study && cond === 'silent';
+    const condReady: Promise<void> =
+      study && !q.get('cond')
+        ? chrome.runtime
+            .sendMessage({ type: 'get-cond', pid })
+            .then((r: CondResponse | undefined) => {
+              if (r?.cond) {
+                cond = r.cond;
+                silent = cond === 'silent';
+              }
+            })
+            .catch(() => {})
+        : Promise.resolve();
+    let cardVisible = false;
+    let loggedDetectSig = '';
+    let loggedShownSig = '';
+
+    function log(event: StudyEvent['event'], extra: Partial<StudyEvent> = {}) {
+      if (!study) return;
+      const started = Number(document.body.dataset.taskStart ?? 0);
+      const e: StudyEvent = {
+        pid,
+        cond,
+        task: document.body.dataset.task ?? '',
+        event,
+        ms: started ? Date.now() - started : undefined,
+        ...extra,
+      };
+      void chrome.runtime.sendMessage({ type: 'log', event: e }).catch(() => {});
+    }
+
+    function summarize(list: Span[]) {
+      return {
+        n: list.length,
+        categories: [...new Set(list.map(categoryOf))].sort(),
+        max_tier: list.reduce((m, s) => Math.max(m, tierOf(s)), 0),
+      };
+    }
+
     const ui = new WarningUI({
-      onRewrite: () => void rewrite(),
+      onRewrite: () => {
+        log('rewrite_clicked');
+        void rewrite();
+      },
       onIgnore: () => {
+        log('warning_ignored');
         dismissedSig = signature(spans);
         clearAll();
       },
       onReplace: (text) => {
+        log('rewrite_applied');
         if (target) replaceEditableText(target, text);
         ui.hideCard();
+        cardVisible = false;
       },
       onBack: () => {
         if (target && spans.length) ui.showFound(target, spans);
@@ -37,6 +102,7 @@ export default defineContentScript({
     function clearAll() {
       ui.clearHighlights();
       ui.hideCard();
+      cardVisible = false;
     }
 
     function analyze(el: HTMLElement) {
@@ -73,10 +139,28 @@ export default defineContentScript({
         clearAll();
         return;
       }
+      if (study) {
+        const sum = summarize(spans);
+        const sig = `${sum.categories.join(',')}:${sum.n}`;
+        if (sig !== loggedDetectSig) {
+          loggedDetectSig = sig;
+          log('detected', sum);
+        }
+      }
+      if (silent) return; // silent condition: detect and log, but show nothing
       if (signature(spans) === dismissedSig) return;
       dismissedSig = '';
       ui.setHighlights(now.segments ? rangesFor(now.segments, spans) : []);
       ui.showFound(target, spans);
+      cardVisible = true;
+      if (study) {
+        const sum = summarize(spans);
+        const sig = `${sum.categories.join(',')}:${sum.n}`;
+        if (sig !== loggedShownSig) {
+          loggedShownSig = sig;
+          log('warning_shown', sum);
+        }
+      }
     }
 
     async function rewrite() {
@@ -106,6 +190,30 @@ export default defineContentScript({
       },
       true,
     );
+
+    if (study) {
+      void condReady.then(() => log('session_start'));
+      document.addEventListener('pw:task', () => {
+        loggedDetectSig = '';
+        loggedShownSig = '';
+        dismissedSig = '';
+        void condReady.then(() => log('task_start'));
+      });
+      // The mock page fires pw:send before it clears the box, so the text is still readable here.
+      document.addEventListener('pw:send', () => {
+        const box = document.getElementById('prompt');
+        const warned = cardVisible && !silent;
+        const text = box ? readEditable(box).text : '';
+        clearAll();
+        void chrome.runtime
+          .sendMessage({ type: 'detect-full', text })
+          .then((res: DetectFullResponse | undefined) => {
+            const found = res?.spans ?? [];
+            log('send', { ...summarize(found), disclosed: found.length > 0, warned });
+          })
+          .catch(() => log('send', { n: 0, disclosed: false, warned }));
+      });
+    }
 
     // Slower contextual detector results arrive here.
     chrome.runtime.onMessage.addListener((msg: SpansUpdate) => {

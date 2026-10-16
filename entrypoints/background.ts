@@ -1,9 +1,11 @@
 import { detectRegex, mergeSpans } from '../lib/regex';
+import { SERVER, detectViaServer } from '../lib/model-client';
 import { maskText } from '../lib/mask';
 import { safeRewrite } from '../lib/rewrite';
 import type {
   AnalyzeResponse,
   ContentRequest,
+  DetectFullResponse,
   OffscreenBody,
   OffscreenResponse,
   RewriteResponse,
@@ -42,13 +44,41 @@ export default defineBackground(() => {
       // Phase 2: contextual detector. Updates the page later if it finds more.
       const tabId = sender.tab?.id;
       if (tabId !== undefined) {
-        void askOffscreen({ type: 'gliner', text: msg.text }).then((res) => {
-          if (!res.ok || !res.spans?.length) return;
-          const merged = mergeSpans([...regexSpans, ...res.spans]);
+        void detectViaServer(msg.text).then((modelSpans) => {
+          if (!modelSpans.length) return;
+          const merged = mergeSpans([...regexSpans, ...modelSpans]);
           const update: SpansUpdate = { type: 'spans', id: msg.id, spans: merged };
           chrome.tabs.sendMessage(tabId, update).catch(() => {});
         });
       }
+      return false;
+    }
+
+    if (msg.type === 'detect-full') {
+      void (async () => {
+        const regexSpans = detectRegex(msg.text);
+        const modelSpans = await detectViaServer(msg.text);
+        const reply: DetectFullResponse = { spans: mergeSpans([...regexSpans, ...modelSpans]) };
+        sendResponse(reply);
+      })();
+      return true;
+    }
+
+    if (msg.type === 'get-cond') {
+      void fetch(`${SERVER}/cond?pid=${encodeURIComponent(msg.pid)}`)
+        .then((r) => r.json())
+        .then((d: { cond?: string }) => sendResponse({ cond: d.cond === 'silent' || d.cond === 'active' ? d.cond : null }))
+        .catch(() => sendResponse({ cond: null }));
+      return true;
+    }
+
+    if (msg.type === 'log') {
+      // Event-only study log, written by the local server on the researcher's machine.
+      void fetch(`${SERVER}/log`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(msg.event),
+      }).catch(() => {});
       return false;
     }
 

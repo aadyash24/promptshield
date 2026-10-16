@@ -102,6 +102,7 @@ export function detectRegex(text: string): Span[] {
 }
 
 function better(a: Span, b: Span): boolean {
+  if (a.source === 'model' && b.source === 'regex' && a.type === b.type) return true;
   const pa = PRIORITY[a.type];
   const pb = PRIORITY[b.type];
   if (pa !== pb) return pa > pb;

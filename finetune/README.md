@@ -84,7 +84,20 @@ questions ("what is diabetes"), public figures, fictional characters, example fo
 `XXX-XX-XXXX`, or vague symptoms with no named condition. Mental health, HIV and STIs, substance use,
 reproductive and genetic health are tier 3. Copy each finding exactly as written.
 
-## Using the model in the extension (decision needed by Oct 31)
+## Using the model in the extension
+
+**Fastest path (used for the demo and the study): local server.** After training and merging:
+
+```
+python serve.py --base out/adapter/merged          # the merged model folder from train_lora.py --merge
+# or without merging:  python serve.py --base Qwen/Qwen2.5-1.5B-Instruct --adapter out/adapter
+```
+The extension calls it at `http://127.0.0.1:8765/detect`. If the server is off, the extension falls back to
+regex only. On a laptop CPU a 1.5B model takes several seconds per prompt, so use a GPU or Apple silicon if
+you can, or try `Qwen/Qwen2.5-0.5B-Instruct`. The server drops any finding whose text is not in the prompt.
+Run `python serve.py --regex-only` to test everything without a model.
+
+## Older notes: in-browser options (optional)
 
 The current extension runs models in the browser with WebLLM, which only loads models compiled with
 MLC. A fine-tuned model needs one of:

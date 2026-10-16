@@ -39,13 +39,14 @@ shows warning card
 | Regex detector, masking, safe-rewrite fallback | Unit tested (`npm test`) |
 | DOM text mapping and highlight ranges | Tested in jsdom |
 | Typecheck and production build | Passing |
-| Content script and warning card in a real browser | **Not yet tried.** First thing to do: `npm run dev` and type in ChatGPT |
+| Content script and warning card in a real browser | Verified in Chromium on the mock chat (`python study/e2e/run.py`). **Not yet tried on chatgpt.com, claude.ai or gemini.** |
 | WebLLM rewrite on a real GPU | **Not yet tried.** Model id is in `entrypoints/offscreen/main.ts` |
-| GLiNER contextual detection | **Not verified.** See the TODO in `lib/gliner-adapter.ts` |
+| Fine-tuned detector via local server | Server and extension integration tested in regex-only mode. **The model itself is not trained yet** (see `finetune/README.md`) |
+| Study mode (mock chat, active vs silent, event-only logs) | Verified end to end in Chromium, logs checked for leaked text |
 
 ## Open work, by owner
 
-- **Detection owner:** finish `lib/gliner-adapter.ts` (confirm the ONNX file name, wasm paths, labels, threshold). The extension works without it, regex only.
+- **Detection owner:** train and evaluate the fine-tuned detector in `finetune/`, then run `python finetune/serve.py --base ... --adapter ...`. The extension works without it, regex only. GLiNER was dropped.
 - **Model owner:** run `bakeoff/` on Tue Oct 13 (below), then set `MODEL_ID` in `entrypoints/offscreen/main.ts`.
 - **UI owner:** try the card on each site, fix selectors or replace behavior where an editor misbehaves (`lib/dom.ts`, `lib/ui.ts`). Textareas get the card but no inline highlights.
 - **Demo owner:** write the 20-prompt test set (10 sensitive, 10 clean) from `tests/regex.test.ts` as a starting point, then the script and backup video.
@@ -64,3 +65,16 @@ Open http://localhost:8080 in Chrome, load a model, run all 15 prompts, tick "Me
 - The build is about 40 MB because the ONNX runtime wasm files are bundled. That is fine for loading unpacked.
 - `onnxruntime-web` contains a direct `eval` that the bundler warns about. Chrome's extension CSP blocks `eval`, so the GLiNER path may need a different execution provider or build. Check the offscreen page console.
 - Rewrite quality of a 1B model is modest by design. The fallback keeps it safe.
+
+
+## Study mode and the local server
+
+`finetune/serve.py` serves three things on `http://127.0.0.1:8765`: the detector (`/detect`), the study logger (`/log`, event-only), and the mock chat page in `study/mock/`. The content script also runs on the mock chat, where it switches to study mode: it reads the participant's condition (active or silent) from the server, logs events without prompt text, and in the silent condition detects but shows nothing.
+
+```
+npx wxt build                                   # then load .output/chrome-mv3 in chrome://extensions
+cd finetune && python serve.py --regex-only     # or --base ... --adapter ... for the fine-tuned model
+open http://127.0.0.1:8765/assign?pid=P01       # balanced active/silent, hidden from the participant
+python study/e2e/run.py                         # browser test of the whole flow (needs Playwright)
+```
+Logs land in `finetune/study_logs/` (gitignored). `python analyze_logs.py` summarizes them. The session script, consent draft, personas and survey are in the team's Study Kit doc.

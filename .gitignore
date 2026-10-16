@@ -9,3 +9,4 @@ finetune/out/
 finetune/__pycache__/
 finetune/**/__pycache__/
 .pytest_cache/
+finetune/study_logs/
