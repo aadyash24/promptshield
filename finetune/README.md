@@ -15,7 +15,7 @@ Code finds where each `text` sits in the prompt, so the model never has to count
 2. **The training data is synthetic**, built from templates with fake values. The test split uses
    templates the model never trains on, which is much harder than a random split, but it is still
    template language. `data/handwritten.jsonl` is the more honest test. **Each teammate should add
-   10 to 15 prompts to `handwritten.py` in their own style** before the final numbers are reported.
+   15 prompts in their own file, `handwritten_extra/<name>.py` (copy `_template.py`), in their own style** before the final numbers are reported.
 3. Nothing here has been run on a GPU yet. See "What has been verified" at the bottom.
 
 ## Run it (Google Colab, free T4 GPU, about an hour total)
@@ -71,7 +71,7 @@ from Colab before the session ends.
 | `taxonomy.py` | Categories, domains, tiers, annotation policy. Edit tiers here |
 | `slots.py`, `templates.py` | Fake value generators and prompt templates (hand-written plus a generated bank of clean topic questions) |
 | `make_dataset.py` | Writes `data/train.jsonl`, `val.jsonl`, `test.jsonl`, `stats.json` |
-| `handwritten.py` | Hand-labeled realistic prompts, writes `data/handwritten.jsonl` |
+| `handwritten.py`, `handwritten_extra/` | Hand-labeled realistic prompts: a starter set plus one file per teammate. The test set is built from all of them each run |
 | `prompt.py` | The instruction and output format. Identical for zero-shot, training, and inference |
 | `train_lora.py` | LoRA fine-tuning |
 | `evaluate.py`, `metrics.py` | Scoring against gold labels |

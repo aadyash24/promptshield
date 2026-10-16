@@ -6,87 +6,122 @@ Fill in names: **A** = ________  **B** = ________  **C** = ________  **D** = ___
 
 ## How the work is split
 
-Four workstreams. Each person **leads one** and does **a small slice of each of the others**, so everyone touches the model, the demo, the study and the writing. Leads decide; slices are reviewed by the lead.
+Nobody is "the model person" or "the slides person". Instead, **each person owns one slice of the problem from start to finish**, so everyone does real work on all five areas: the model, the extension, the demo, the study, and the presentation and report.
 
-| | Workstream | What the lead owns | Lead |
+A slice is a group of data categories, plus the persona that exercises them in the study. The four slices cover all 18 categories in `finetune/taxonomy.py`.
+
+| | Slice | Categories | Study persona and task |
 | --- | --- | --- | --- |
-| 1 | **Model** | Colab training and evaluation, error analysis, the adapter file | A |
-| 2 | **Extension and demo** | Extension build, local server, mock chat page, the live demo | B |
-| 3 | **Study** | IRB question, consent form, personas and tasks, session script, log analysis | C |
-| 4 | **Presentation and report** | Slides, speaker notes, the final report skeleton, the backup demo video | D |
+| **A** | Financial | `FIN_INSTITUTION`, `INCOME`, `BALANCE_DEBT`, `CARD_NUMBER`, `BANK_ACCOUNT` | Maya Okafor, `bank`: dispute a double charge |
+| **B** | Medical | `MED_PROVIDER`, `MED_CONDITION`, `MEDICATION`, `MED_RECORD_ID`, `SENSITIVE_HEALTH` | Daniel Reyes, `insurer`: appeal a denied claim |
+| **C** | Personal identifiers | `PERSON_NAME`, `DATE_OF_BIRTH`, `GOV_ID`, `HOME_ADDRESS` | Priya Nair, `rental`: rental application note |
+| **D** | Contact, work, secrets | `EMAIL`, `PHONE`, `WORKPLACE_SCHOOL`, `CREDENTIAL` | Marcus Bell, `script`: debug a script with an API key |
 
-**Everyone, regardless of workstream**
-- Adds 10 to 15 realistic prompts to `finetune/handwritten.py` in their own writing style.
-- Recruits at least 4 study participants and runs their own sessions.
-- Presents part of the progress and final presentations.
-- Writes one section of the final report.
-- Reviews one teammate's pull request each phase. Review pairs: **A with B**, **C with D**.
+Everyone gets **one job in each area**. The jobs are the same size, and each person's slice and jobs are chosen so nobody is on the same thing as someone else.
+
+| Area | A | B | C | D |
+| --- | --- | --- | --- | --- |
+| **Model: training experiment** | Qwen2.5-1.5B, default settings | Qwen2.5-1.5B, 3 epochs | Qwen2.5-1.5B, LoRA rank 32, lr 1e-4 | Qwen2.5-0.5B, default settings (fast fallback) |
+| **Model: zero-shot base comparison** | Qwen2.5-0.5B-Instruct | Qwen2.5-1.5B-Instruct | Qwen2.5-3B-Instruct | SmolLM2-1.7B-Instruct |
+| **Model: slice analysis** | Per-category results and errors for financial | Same for medical | Same for personal identifiers | Same for contact, work, secrets |
+| **Extension component** | Detection pipeline: server, latency, one-command start | Warning card and highlights, tested on real chat sites | Safer rewrite and the leak check, 10 before and after examples | Study mode: mock chat, logging, log analysis |
+| **Demo** | Scene 1: bank task, about 40 seconds | Scene 2: insurer task | Scene 3: rental task | Scene 4: script task |
+| **Study role** | Ethics: IRB question and the final consent form | Recruiting and scheduling, participant tracker | Session script, survey, and the pilot session | Log analysis and the results tables |
+| **Presentation** | Intro and problem | System and architecture | Method and study design | Limits, ethics, next steps |
+| **Report section** | Introduction and background | System design | Study method | Discussion and limitations |
+| **Plus, in every slice** | Your slice's results slide, your demo scene, your results paragraph, and 15 handwritten prompts for your categories | same | same | same |
+
+**Everyone also:** recruits at least 4 study participants and runs their own sessions, and reviews one teammate's work each phase. Review pairs: **A with B**, **C with D**.
 
 ## Rules that keep it streamlined
 
-1. **One branch per person per task**, named `a/colab-eval`, `b/demo-script`, and so on. Open a pull request into `main`. The review partner approves. Never push straight to `main`.
-2. **Commit under your own name and school email.** Check with `git config user.email` before your first commit.
-3. **Daily 10 minute check-in** (call or chat), three questions: done, doing today, blocked. Post it in the team chat so nobody has to attend live.
-4. **One source of truth.** Numbers for slides come from `finetune/results/*/report.md`. Study logs come from `finetune/study_logs/`. Do not retype numbers by hand.
-5. **Blocked for more than an hour: say so.** Anyone can pick up anyone's task, because every step is a command in a README.
-6. **Do not wait on the model.** The demo must work with `python serve.py --regex-only` at all times. The fine-tuned model is an upgrade, not a dependency.
+1. **One branch per person per task**, named `a/zero-shot`, `b/card-ui`, and so on. Open a pull request into `main`. The review partner approves. Never push straight to `main`.
+2. **Commit under your own name and school email.** Check `git config user.email` before the first commit.
+3. **Each person works in their own files where possible.** Handwritten prompts go in `finetune/handwritten_extra/<yourname>.py`, which prevents merge conflicts. Shared files (`taxonomy.py`, `templates.py`, `content.ts`) change only through a pull request and a reviewer.
+4. **Daily 10 minute check-in** in the team chat: done, doing today, blocked.
+5. **Numbers come from files, not from memory.** Use `finetune/results/*/report.md` for model numbers and `finetune/study_logs/` for study numbers.
+6. **Never wait on the model.** The demo always works with `python serve.py --regex-only`. The fine-tuned model is an upgrade, not a dependency.
+7. **Do not tune on the test set.** Choose the best model using the `val` split. Run `test` once for the winner.
+8. **Blocked for more than an hour? Say so.** Every step is a command in a README, so anyone can pick up anyone's task.
 
 ## This week: Fri Oct 16 to Tue Oct 20
 
-Progress presentation is Oct 20 or 22 (confirm which). Plan for Tuesday; Thursday is the buffer.
+The progress presentation is Oct 20 or 22 (confirm which). Plan for Tuesday and treat Thursday as the buffer. The schedule is the same for everyone. Your slice and your column in the table above say what is specific to you.
 
-| Day | A (Model lead) | B (Demo lead) | C (Study lead) | D (Presentation lead) |
-| --- | --- | --- | --- | --- |
-| **Fri Oct 16** | Open Colab with a T4. Run the tests, then `train_lora.py --smoke`, then start the real training (about 1 hour). Download `out/adapter`. | Build the extension (`npm install`, `npx wxt build`), load it in Chrome, run `serve.py --regex-only`, open the mock chat and confirm the card appears. Run `python study/e2e/run.py`. | Email the instructor: does UTK IRB review or an exemption apply? Review the consent draft and personas in the Study Kit. Check the three risk tiers in `finetune/taxonomy.py` against the proposal. | **Cross-training (model):** run the zero-shot comparison in Colab for both base models (Oct 4 evidence): `evaluate.py --base Qwen/Qwen2.5-0.5B-Instruct --split test`, then the 1.5B. Save the reports. Add your handwritten prompts. |
-| **Sat Oct 17** | Evaluate the fine-tuned model on `test` and `handwritten`. Save the `results/` folders. If tier 3 recall is weak, start a second run with more epochs. | **Cross-training (study):** run the whole mock chat as a participant, once as active and once with `?cond=silent`. Confirm logs appear and `analyze_logs.py` runs. Add your handwritten prompts. | **Cross-training (model):** read `errors.jsonl` from the fine-tuned run. List the 5 most common misses and false alarms with one example each. Add your handwritten prompts. | Draft the slide outline (below). Pull the numbers from the three result reports into a comparison table. **Cross-training (demo):** write the 2 minute demo script. |
-| **Sun Oct 18** | Merge the adapter: `train_lora.py --merge`. Hand the folder to B. Write the "model" slides content: data, method, results, limits. | Run `serve.py --base ... --adapter ...` with the trained model. Time a prompt. If it is slower than about 5 seconds, try the 0.5B model or a GPU laptop. **Cross-training (slides):** build the architecture slide from the walkthrough page. | Finish the session script and recruiting message. **Cross-training (demo):** rehearse the demo once with the script, note anything confusing. Send the IRB answer to the team. | Build the slides from the outline. Assign speaking parts. Add the error examples from C. |
-| **Mon Oct 19** | **Cross-training (study):** run one full pilot session with a friend using the mock chat. Report timing and confusion. | Freeze the demo. Record the backup video of the full flow. Write the fallback steps (regex-only) on one page. | Fix any issues from A's pilot in the consent, script or tasks. Prepare the participant ID scheme (below). | Full rehearsal with timing. Fix slides. Everyone reads the speaker notes. |
-| **Tue Oct 20** | Present the model section. Bring the adapter folder on a USB stick and the results files. | Present the demo. Bring the backup video. Start the server **before** the talk. | Present the study design section. | Present the intro and wrap-up. Hold the clicker and the timer. |
+| Day | Everyone does this |
+| --- | --- |
+| **Fri Oct 16** | **Setup (30 minutes):** clone the repo, `npm install`, `npx wxt build`, load `.output/chrome-mv3` in Chrome (`chrome://extensions`, Developer mode, Load unpacked). In `finetune/`, run `python -m pytest tests -q`, then `python serve.py --regex-only` and open `http://127.0.0.1:8765/assign?pid=test`. Type your persona's details into the mock chat and watch what gets caught. Note what the regex layer misses.<br>**Model, Colab T4:** run your zero-shot base model on `test` and on `handwritten` (`python evaluate.py --base <model> --split test --name zs-<model>`). Save `results/`.<br>**Handwritten prompts:** write your 15 in `finetune/handwritten_extra/<yourname>.py`. Run `python handwritten.py` to check them.<br>**Study role:** start your task (A emails the instructor about IRB, B starts the participant tracker, C reads the session script and survey and edits them, D checks `analyze_logs.py` runs on the e2e test logs). |
+| **Sat Oct 17** | **Model, Colab T4:** run your training experiment from the table (`python train_lora.py --base ... --out out/<yourname>`). Takes about an hour. Then run `python evaluate.py ... --split val --name <yourname>-val` and post the numbers in the team chat. **At 8 pm the team picks the winner on `val` together.** The winner's owner runs `test` and `handwritten` once and shares the adapter folder on the team drive.<br>**Extension component:** do your job from the table (details below). |
+| **Sun Oct 18** | **Slice analysis:** run `evaluate.py` for the winning adapter on `test` and `handwritten` in your own Colab. Read `report.md` per-category rows and `errors.jsonl` for your slice's categories. Write down the 3 most common misses and false alarms with one example each. **Do not add training data yet.** That is next week's retrain.<br>**Demo scene:** write and rehearse your 40 second scene with the winning model: the task, what you type, what the extension catches, and one thing it misses (be honest about it).<br>**Slides and report:** draft your results slide and your report paragraph from the numbers and errors. |
+| **Mon Oct 19** | **Integration, one laptop:** run `python serve.py --base <merged model> ` and do all four demo scenes back to back. Fix what breaks. **Full rehearsal twice** with timing. Record a backup video of the full run. Review your partner's slides and pull request. |
+| **Tue Oct 20** | Present your parts. Start the server and open the mock chat **before** the talk. Bring the adapter folder and the backup video. |
 
-### Progress presentation outline (about 10 minutes)
+### Training commands (Saturday)
 
-1. The problem and who it affects (D)
-2. How the extension works, with the architecture slide (B)
-3. The model: data, fine-tuning, results versus the regex baseline (A)
-4. Live demo (B), with the backup video ready
-5. Study design: conditions, tasks, measures, and the ethics status (C)
-6. Timeline and next steps, plus what is not done yet (D)
+```
+A:  python train_lora.py --base Qwen/Qwen2.5-1.5B-Instruct --out out/a
+B:  python train_lora.py --base Qwen/Qwen2.5-1.5B-Instruct --epochs 3 --out out/b
+C:  python train_lora.py --base Qwen/Qwen2.5-1.5B-Instruct --lora-r 32 --lr 1e-4 --out out/c
+D:  python train_lora.py --base Qwen/Qwen2.5-0.5B-Instruct --out out/d
+```
+Always run `--smoke` first. Evaluate with `python evaluate.py --base <same base> --adapter out/<you> --split val --name <you>-val`. If SmolLM2 does not load for D on Friday, use any other small open instruct model and tell the team which.
 
-Be plain about limits: synthetic training data, a small handwritten test set, one base model, and a study that has not started.
+### Your extension job, in detail
+
+| Person | Do this | Done when |
+| --- | --- | --- |
+| **A: detection pipeline** | Measure how long a prompt takes on CPU and on GPU or Apple silicon. Tune `--max-new-tokens`. Add a start script so the whole demo starts with one command. | A teammate starts the demo from the README alone. Timing numbers are in the team chat. |
+| **B: warning card and highlights** | Test on a textarea and a contenteditable box. Test on chatgpt.com, claude.ai, and gemini. Fix highlight bugs. Show the risk tier in the card (colors or a label). | Screenshots from each site in the pull request. |
+| **C: safer rewrite** | Test "Use safer version" for your slice's category examples. Check the leak check still falls back to placeholders when the model leaks. Make placeholders readable, such as `[CARD_1]`. | 10 before and after examples for the slides. |
+| **D: study mode** | Walk through the mock chat as both conditions. Confirm the logs hold no prompt text. Run `python study/e2e/run.py` and `python analyze_logs.py` on the output. | The e2e test passes on your laptop. A sample results table exists. |
+
+### What each person presents (about 10 minutes total)
+
+1. **A:** the problem and who it affects, and what is in scope
+2. **B:** how the extension works, using the architecture slide
+3. **C:** how we trained and evaluated the model, and the study design
+4. **All four, in turn:** your demo scene (40 seconds each) with your slice's result slide
+5. **D:** limits, what is not done, ethics status, and the timeline
+
+Be plain about the limits: synthetic training data, a small handwritten test set, and a study that has not started.
 
 ## Then: Oct 21 to Nov 24
 
-| Dates | Milestone | A (Model) | B (Demo) | C (Study) | D (Presentation) |
-| --- | --- | --- | --- | --- | --- |
-| Oct 21 to 24 | Fix issues from the presentation feedback | Retrain or tune if the feedback asks | Cross-training (study): load the extension on a fresh laptop and follow only the README | Update consent and tasks from feedback | Collect feedback notes into a list |
-| Oct 25 to 31 | **Extension, mock chat, personas, task scripts, consent forms final** | Cross-training (demo): measure latency on a participant-style laptop | Final extension build, install guide, one-page troubleshooting | IRB confirmed, consent forms printed, personas final | Cross-training (study): check that every task and question reads clearly |
-| Nov 1 to 6 | Recruit and schedule, pilot once more | Pilot as researcher | Be on call for tech problems | Schedule board and ID scheme | Cross-training: recruit 4 people |
-| **Nov 7** | **User study: each member runs sessions with at least 4 participants** | Run own sessions | Run own sessions | Run own sessions, collect all logs | Run own sessions |
-| Nov 8 to 14 | **Analyze logs, finalize report** | Detector precision and recall section | Methods and system section | Run `analyze_logs.py`, results section | Introduction, discussion, limitations, final edit |
-| Nov 17 to 24 | **Final presentation** | Model results slides | Final demo | Study results slides | Lead the deck, rehearsal, timing |
+Same rule: the same schedule for everyone, with specifics from your slice.
 
-### Running the study with four laptops
+| Dates | Milestone | What everyone does | What is specific to you |
+| --- | --- | --- | --- |
+| Oct 21 to 24 | **Retrain with improved data** | Use your slice's top misses to add templates in `finetune/templates.py` for your categories. Open a pull request. | One person (rotate) merges and retrains. Everyone re-evaluates their slice on `val`, then the winner on `test` once. |
+| Oct 25 to 31 | **Extension, mock chat, personas, task scripts, consent forms final** | Install the extension on a fresh laptop and follow only the README. Check your persona and task read clearly. | Finish your extension job. A: final consent form and IRB confirmation. B: participant tracker and schedule. C: final session script and survey. D: final logging and analysis. |
+| Nov 1 to 6 | Recruit and pilot | Recruit 4 participants. Run one pilot session each with a friend. | Fix issues in your own area. |
+| **Nov 7** | **User study** | Run sessions with 4 or more participants on your own laptop. | Copy `study_logs/` to the team drive after each session. |
+| Nov 8 to 14 | **Analyze logs, finalize report** | Write your results paragraph and your report section. Review your partner's section. | D runs the analysis and produces the tables. A to D each write their report section from the table above. |
+| Nov 17 to 24 | **Final presentation** | Rehearse twice. Present your parts. | Same sections as the progress presentation, updated with the study results. |
 
-- Each member uses their own laptop and runs `serve.py` there. The server balances active and silent within each laptop, so give each member **exactly 4 participants (or any even number)** to keep the groups balanced.
+### Running the study on four laptops
+
+- Everyone runs `serve.py` on their own laptop. The server balances active and silent within each laptop, so give each member **4 participants, or any even number**, to keep the groups balanced.
 - Use participant IDs with the member letter: `A01` to `A04`, `B01` to `B04`, and so on.
-- After each session, copy `finetune/study_logs/` to the team drive in a folder per member. Merge the folders into one before running `analyze_logs.py`.
-- The consent forms stay in a separate folder from the logs. Never write a participant's name into the logs.
+- After each session, copy `finetune/study_logs/` to the team drive in a folder per member. D merges the folders before running `analyze_logs.py`.
+- Keep signed consent forms in a separate folder from the logs. Never write a participant's name into the logs.
 
 ## Definition of done by milestone
 
-- **Oct 17:** Fine-tuned model scored on `test` and `handwritten`. Result reports saved. Compared against the regex baseline and the zero-shot models.
-- **Oct 20:** Demo runs on a clean laptop with one command, and falls back to regex only. Slides finished. Backup video recorded.
-- **Oct 31:** A stranger can install the extension and finish a mock chat session using only the README. IRB question answered. Consent forms ready.
-- **Nov 7:** At least 16 participants completed all four tasks. Logs saved for everyone.
-- **Nov 14:** Report finished. Every number comes from `results/` or `study_logs/`.
+- **Oct 17:** Four training runs compared on `val`. The winner scored once on `test` and `handwritten`. Result reports saved and compared with the regex baseline and the zero-shot models.
+- **Oct 20:** The demo runs on a clean laptop from the README, with a regex-only fallback. Slides are done. The backup video is recorded.
+- **Oct 31:** A stranger can install the extension and finish a mock chat session using only the README. The IRB question is answered. Consent forms are ready.
+- **Nov 7:** At least 16 participants completed all four tasks. Logs are saved for everyone.
+- **Nov 14:** The report is finished. Every number comes from `results/` or `study_logs/`.
 
 ## Risks and the fallback for each
 
 | Risk | Fallback |
 | --- | --- |
-| Colab disconnects mid-training | Train with `--epochs 1` first, save the adapter, then continue. Or use a smaller base model. |
+| Colab disconnects mid-training | Run with `--epochs 1` first and save the adapter. Reconnect and train again from the start if needed. |
+| Colab GPU is not available | Try a different account or time of day. The 0.5B model (D's run) is the smallest option. |
+| Models score within noise of each other | Pick the smallest model that is close, since it runs fastest in the demo. |
 | Fine-tuned model is too slow for a live demo | Run the demo with `--regex-only` and show the model results on slides. |
-| Fine-tuned model scores poorly | Report it honestly. Compare to the regex baseline, show the error analysis, and say what would improve it. |
+| Fine-tuned model scores poorly | Report it honestly. Compare against the regex baseline, show the error analysis, and say what would improve it. |
 | IRB or instructor approval takes too long | Ask now. Do not recruit until it is settled. Use the extra time to improve the model. |
-| Fewer than 16 participants | Report the actual number, describe results as exploratory, and use the permutation test output as given. |
-| Someone is unavailable | Their review partner takes over their tasks for that phase. Every step is in a README. |
+| Fewer than 16 participants | Report the actual number and describe results as exploratory. |
+| Someone is unavailable | Their review partner takes over their tasks for that phase. |

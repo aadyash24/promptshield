@@ -2,9 +2,10 @@
 """Hand-labeled, realistic test prompts. Written by hand (not templates), so this is the
 most honest test of whether the model works on natural language.
 
-TEAM TODO: each teammate should add 10 to 15 prompts here in their own writing style, and
-label them using the policy in taxonomy.py. More natural prompts here is the single best
-way to make the final results credible. Run `python handwritten.py` after editing.
+TEAM TODO: each teammate adds 15 prompts in their OWN file, handwritten_extra/<yourname>.py
+(copy handwritten_extra/_template.py), in their own writing style, labeled with the policy in
+taxonomy.py. Separate files mean no merge conflicts. This file holds the starter set only.
+Check your file with `python handwritten.py`. data/handwritten.jsonl is generated, not committed.
 
 Format: (prompt, [(exact text copied from the prompt, CATEGORY), ...]). Tier comes from
 taxonomy.py. An empty list means the prompt contains nothing sensitive.
@@ -82,9 +83,22 @@ PROMPTS = [
 ]
 
 
+def all_prompts():
+    """Starter prompts plus every handwritten_extra/*.py file (files starting with _ are skipped)."""
+    import importlib.util
+
+    out = list(PROMPTS)
+    for f in sorted((Path(__file__).parent / "handwritten_extra").glob("[!_]*.py")):
+        spec = importlib.util.spec_from_file_location(f"hw_{f.stem}", f)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        out += list(mod.PROMPTS)
+    return out
+
+
 def build():
     rows = []
-    for i, (prompt, spans) in enumerate(PROMPTS):
+    for i, (prompt, spans) in enumerate(all_prompts()):
         findings = []
         for text, cat in spans:
             assert cat in BY_NAME, f"unknown category {cat} in prompt {i}"

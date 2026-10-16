@@ -19,6 +19,10 @@ HERE = Path(__file__).parent
 
 
 def load_split(split: str, limit: int | None):
+    if split == "handwritten":  # built on the fly so teammates' prompt files are always included
+        from handwritten import build
+        rows = build()
+        return rows[:limit] if limit else rows
     rows = [json.loads(line) for line in open(HERE / "data" / f"{split}.jsonl", encoding="utf-8")]
     return rows[:limit] if limit else rows
 

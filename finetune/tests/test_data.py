@@ -14,6 +14,8 @@ DATA = Path(__file__).resolve().parent.parent / "data"
 
 
 def rows(name):
+    if name == "handwritten":
+        return build_handwritten()
     return [json.loads(line) for line in open(DATA / f"{name}.jsonl", encoding="utf-8")]
 
 
@@ -77,8 +79,7 @@ def test_template_ids_are_unique():
     assert len(ids) == len(set(ids))
 
 
-def test_handwritten_matches_file_and_has_clean_and_sensitive():
-    built = build_handwritten()
-    on_disk = rows("handwritten")
-    assert [b["prompt"] for b in built] == [d["prompt"] for d in on_disk]
-    assert any(not r["findings"] for r in on_disk) and any(r["findings"] for r in on_disk)
+def test_handwritten_builds_with_all_teammate_files_and_has_clean_and_sensitive():
+    built = build_handwritten()  # fails loudly if a teammate's span is not in their prompt
+    assert any(not r["findings"] for r in built) and any(r["findings"] for r in built)
+    assert len({r["prompt"] for r in built}) == len(built), "duplicate handwritten prompt"
