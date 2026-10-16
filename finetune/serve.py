@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Local server for the demo and the user study. Everything stays on this computer.
 
-    python serve.py --base Qwen/Qwen2.5-1.5B-Instruct --adapter out/adapter   # fine-tuned model
+    python serve.py --token-model out/tok-distilroberta                       # token classifier (fast)
+    python serve.py --base Qwen/Qwen2.5-1.5B-Instruct --adapter out/adapter   # fine-tuned LLM
     python serve.py --regex-only                                              # no model, for testing
 
 It does three jobs on http://127.0.0.1:8765 :
@@ -42,13 +43,26 @@ TYPES = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=u
 class Detector:
     """Wraps the fine-tuned model, or the regex baseline when no model is available."""
 
-    def __init__(self, base=None, adapter=None, max_new_tokens=256):
+    def __init__(self, base=None, adapter=None, max_new_tokens=256, token_model=None):
         self.mode = "regex"
         self.lock = threading.Lock()
         self.cache: OrderedDict[str, list] = OrderedDict()
         self.max_new_tokens = max_new_tokens
-        if base:
+        if token_model:
+            self._load_token(token_model)
+        elif base:
             self._load(base, adapter)
+
+    def _load_token(self, path):
+        try:
+            from token_model import TokenDetector
+
+            print(f"loading token classifier {path} ...")
+            self.token = TokenDetector(path)
+            self.mode = "token"
+            print(f"token classifier ready on {self.token.device}")
+        except Exception as err:
+            print(f"WARNING: could not load the token classifier ({err}). Falling back to regex only.")
 
     def _load(self, base, adapter):
         try:
@@ -75,7 +89,9 @@ class Detector:
         if text in self.cache:
             self.cache.move_to_end(text)
             return self.cache[text]
-        if self.mode == "model":
+        if self.mode == "token":
+            findings = self.token.predict([text])[0]
+        elif self.mode == "model":
             findings = self._model_detect(text)
         else:
             from baseline_regex import predict
@@ -239,6 +255,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=8765)
+    ap.add_argument("--token-model", help="folder of a token classifier from train_token.py (fastest option)")
     ap.add_argument("--base", help="base model, e.g. Qwen/Qwen2.5-1.5B-Instruct (or a merged model folder)")
     ap.add_argument("--adapter", help="LoRA adapter folder from train_lora.py")
     ap.add_argument("--regex-only", action="store_true", help="skip the model, use rules only")
@@ -249,7 +266,8 @@ def main():
 
     log_dir = Path(args.log_dir)
     log_dir.mkdir(parents=True, exist_ok=True)
-    detector = Detector(None if args.regex_only else args.base, args.adapter, args.max_new_tokens)
+    detector = Detector(None if args.regex_only else args.base, args.adapter, args.max_new_tokens,
+                        None if args.regex_only else args.token_model)
     handler = make_handler(detector, log_dir, Assigner(log_dir, args.seed))
     srv = ThreadingHTTPServer((args.host, args.port), handler)
     print(f"mode: {detector.mode}   logs: {log_dir}")

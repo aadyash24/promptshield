@@ -72,27 +72,44 @@ def model_predictor(base: str, adapter: str | None, rows, batch_size: int, max_n
     return preds, valid
 
 
+def token_predictor(path: str, rows, batch_size: int):
+    from token_model import TokenDetector
+
+    det = TokenDetector(path)
+    preds = []
+    for i in range(0, len(rows), 256):
+        preds += det.predict([r["prompt"] for r in rows[i:i + 256]], batch_size)
+        print(f"  {min(i + 256, len(rows))}/{len(rows)}", flush=True)
+    return preds, [True] * len(rows)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--split", default="test", choices=["train", "val", "test", "handwritten"])
     ap.add_argument("--limit", type=int)
     ap.add_argument("--baseline", choices=["oracle", "empty", "regex"])
+    ap.add_argument("--token-model", help="folder of a token classifier trained with train_token.py")
     ap.add_argument("--base", help="HF model id of the base model")
     ap.add_argument("--adapter", help="path to a LoRA adapter folder from train_lora.py")
     ap.add_argument("--name", help="results folder name")
     ap.add_argument("--batch-size", type=int, default=8)
     ap.add_argument("--max-new-tokens", type=int, default=256)
     args = ap.parse_args()
-    if not args.baseline and not args.base:
-        raise SystemExit("give --baseline or --base")
+    if not args.baseline and not args.base and not args.token_model:
+        raise SystemExit("give --baseline, --base, or --token-model")
 
     rows = load_split(args.split, args.limit)
-    label = args.baseline or (f"{args.base.split('/')[-1]}{'+' + Path(args.adapter).name if args.adapter else ' (zero-shot)'}")
+    if args.token_model:
+        label = f"token-{Path(args.token_model).name}"
+    else:
+        label = args.baseline or (f"{args.base.split('/')[-1]}{'+' + Path(args.adapter).name if args.adapter else ' (zero-shot)'}")
     name = args.name or f"{label.replace(' ', '_').replace('(', '').replace(')', '')}-{args.split}"
 
     t0 = time.time()
     if args.baseline:
         preds, valid = baseline_predictor(args.baseline, rows)
+    elif args.token_model:
+        preds, valid = token_predictor(args.token_model, rows, args.batch_size)
     else:
         preds, valid = model_predictor(args.base, args.adapter, rows, args.batch_size, args.max_new_tokens)
     secs = time.time() - t0
@@ -107,7 +124,7 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     (out / "metrics.json").write_text(json.dumps(m, indent=2), encoding="utf-8")
     report = report_markdown(f"{label} on {args.split}", m)
-    report += f"\n\nValid JSON: {m['valid_json_rate']:.3f}. Time: {m['seconds_per_prompt']} s per prompt.\n"
+    report += f"\n\nValid output: {m['valid_json_rate']:.3f}. Time: {m['seconds_per_prompt']} s per prompt.\n"
     (out / "report.md").write_text(report, encoding="utf-8")
     with open(out / "errors.jsonl", "w", encoding="utf-8") as fh:
         for r, p in zip(rows, preds):

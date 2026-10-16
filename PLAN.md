@@ -21,7 +21,7 @@ Everyone gets **one job in each area**. The jobs are the same size, and each per
 
 | Area | A | B | C | D |
 | --- | --- | --- | --- | --- |
-| **Model: training experiment** | Qwen2.5-1.5B, default settings | Qwen2.5-1.5B, 3 epochs | Qwen2.5-1.5B, LoRA rank 32, lr 1e-4 | Qwen2.5-0.5B, default settings (fast fallback) |
+| **Model: training experiment** | LLM: Qwen2.5-1.5B with LoRA | LLM: Qwen2.5-0.5B with LoRA (small and faster) | Token classifier: distilroberta-base | Token classifier: roberta-base |
 | **Model: zero-shot base comparison** | Qwen2.5-0.5B-Instruct | Qwen2.5-1.5B-Instruct | Qwen2.5-3B-Instruct | SmolLM2-1.7B-Instruct |
 | **Model: slice analysis** | Per-category results and errors for financial | Same for medical | Same for personal identifiers | Same for contact, work, secrets |
 | **Extension component** | Detection pipeline: server, latency, one-command start | Warning card and highlights, tested on real chat sites | Safer rewrite and the leak check, 10 before and after examples | Study mode: mock chat, logging, log analysis |
@@ -51,20 +51,24 @@ The progress presentation is Oct 20 or 22 (confirm which). Plan for Tuesday and 
 | Day | Everyone does this |
 | --- | --- |
 | **Fri Oct 16** | **Setup (30 minutes):** clone the repo, `npm install`, `npx wxt build`, load `.output/chrome-mv3` in Chrome (`chrome://extensions`, Developer mode, Load unpacked). In `finetune/`, run `python -m pytest tests -q`, then `python serve.py --regex-only` and open `http://127.0.0.1:8765/assign?pid=test`. Type your persona's details into the mock chat and watch what gets caught. Note what the regex layer misses.<br>**Model, Colab T4:** run your zero-shot base model on `test` and on `handwritten` (`python evaluate.py --base <model> --split test --name zs-<model>`). Save `results/`.<br>**Handwritten prompts:** write your 15 in `finetune/handwritten_extra/<yourname>.py`. Run `python handwritten.py` to check them.<br>**Study role:** start your task (A emails the instructor about IRB, B starts the participant tracker, C reads the session script and survey and edits them, D checks `analyze_logs.py` runs on the e2e test logs). |
-| **Sat Oct 17** | **Model, Colab T4:** run your training experiment from the table (`python train_lora.py --base ... --out out/<yourname>`). Takes about an hour. Then run `python evaluate.py ... --split val --name <yourname>-val` and post the numbers in the team chat. **At 8 pm the team picks the winner on `val` together.** The winner's owner runs `test` and `handwritten` once and shares the adapter folder on the team drive.<br>**Extension component:** do your job from the table (details below). |
-| **Sun Oct 18** | **Slice analysis:** run `evaluate.py` for the winning adapter on `test` and `handwritten` in your own Colab. Read `report.md` per-category rows and `errors.jsonl` for your slice's categories. Write down the 3 most common misses and false alarms with one example each. **Do not add training data yet.** That is next week's retrain.<br>**Demo scene:** write and rehearse your 40 second scene with the winning model: the task, what you type, what the extension catches, and one thing it misses (be honest about it).<br>**Slides and report:** draft your results slide and your report paragraph from the numbers and errors. |
-| **Mon Oct 19** | **Integration, one laptop:** run `python serve.py --base <merged model> ` and do all four demo scenes back to back. Fix what breaks. **Full rehearsal twice** with timing. Record a backup video of the full run. Review your partner's slides and pull request. |
+| **Sat Oct 17** | **Model, Colab T4:** run your training experiment from the table (`python train_lora.py --base ... --out out/<yourname>`). Takes about an hour. Then run `python evaluate.py ... --split val --name <yourname>-val` and post the numbers in the team chat. **At 8 pm the team picks the winner on `val` together.** The winner's owner runs `test` and `handwritten` once and shares the model folder on the team drive.<br>**Extension component:** do your job from the table (details below). |
+| **Sun Oct 18** | **Slice analysis:** run `evaluate.py` for the winning model on `test` and `handwritten` in your own Colab. Read `report.md` per-category rows and `errors.jsonl` for your slice's categories. Write down the 3 most common misses and false alarms with one example each. **Do not add training data yet.** That is next week's retrain.<br>**Demo scene:** write and rehearse your 40 second scene with the winning model: the task, what you type, what the extension catches, and one thing it misses (be honest about it).<br>**Slides and report:** draft your results slide and your report paragraph from the numbers and errors. |
+| **Mon Oct 19** | **Integration, one laptop:** run `serve.py` with the winning model and do all four demo scenes back to back. Fix what breaks. **Full rehearsal twice** with timing. Record a backup video of the full run. Review your partner's slides and pull request. |
 | **Tue Oct 20** | Present your parts. Start the server and open the mock chat **before** the talk. Bring the adapter folder and the backup video. |
 
 ### Training commands (Saturday)
 
 ```
 A:  python train_lora.py --base Qwen/Qwen2.5-1.5B-Instruct --out out/a
-B:  python train_lora.py --base Qwen/Qwen2.5-1.5B-Instruct --epochs 3 --out out/b
-C:  python train_lora.py --base Qwen/Qwen2.5-1.5B-Instruct --lora-r 32 --lr 1e-4 --out out/c
-D:  python train_lora.py --base Qwen/Qwen2.5-0.5B-Instruct --out out/d
+B:  python train_lora.py --base Qwen/Qwen2.5-0.5B-Instruct --out out/b
+C:  python train_token.py --base distilroberta-base --out out/c
+D:  python train_token.py --base roberta-base --out out/d
 ```
-Always run `--smoke` first. Evaluate with `python evaluate.py --base <same base> --adapter out/<you> --split val --name <you>-val`. If SmolLM2 does not load for D on Friday, use any other small open instruct model and tell the team which.
+Always run `--smoke` first. Evaluate on `val`:
+- A and B: `python evaluate.py --base <same base> --adapter out/<you> --split val --name <you>-val`
+- C and D: `python evaluate.py --token-model out/<you> --split val --name <you>-val`
+
+The experiment compares two families: a generative LLM (reads the prompt, writes JSON findings) and a token classifier (labels each word). The token classifiers are about 100 times faster and tiny, while the LLMs may judge gray cases better. When the team picks the winner, weigh `val` scores **and** speed: the live demo needs an answer in well under a second. If SmolLM2 does not load for D's zero-shot run on Friday, use any other small open instruct model and tell the team which. Serve the winner with `python serve.py --token-model out/<you>` or `python serve.py --base ... --adapter out/<you>`.
 
 ### Your extension job, in detail
 

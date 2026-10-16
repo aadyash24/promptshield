@@ -84,6 +84,29 @@ questions ("what is diabetes"), public figures, fictional characters, example fo
 `XXX-XX-XXXX`, or vague symptoms with no named condition. Mental health, HIV and STIs, substance use,
 reproductive and genetic health are tier 3. Copy each finding exactly as written.
 
+## Option B: a token classifier (fast, recommended to compare)
+
+Instead of a generative LLM, fine-tune a small BERT-style encoder that labels every word
+(B-GOV_ID, I-GOV_ID, O ...). It reads the same data and is scored by the same `evaluate.py`.
+
+```
+python train_token.py --base distilroberta-base --smoke                 # about a minute
+python train_token.py --base distilroberta-base --out out/tok           # a few minutes on a T4
+python evaluate.py --token-model out/tok --split val
+python serve.py --token-model out/tok                                   # the extension picks it up
+```
+Other bases to try: `roberta-base`, `bert-base-cased`, `microsoft/deberta-v3-small` (needs a fast tokenizer;
+the script stops with a clear message if the base has none). Use cased models, because capital letters
+help with names. Compared with the LLM it is roughly 100 times faster and about 10 to 50 times smaller, never
+returns broken JSON, and cannot invent text, because spans are rebuilt from character offsets. The trade-off is
+weaker judgment on gray cases such as a general question versus a real disclosure, and prompts are read in
+256-token windows (longer prompts are split with overlap). Compare it with the LLM on `val`, and run `test`
+once for the winner.
+
+Verified here without a GPU or Hugging Face access: labels convert to tokens and back without loss for two
+tokenizer styles (tests), a tiny random model trains and learns something in 20 seconds, and `evaluate.py` and
+`serve.py` run with it. Not verified: a real pretrained encoder, which needs Colab.
+
 ## Using the model in the extension
 
 **Fastest path (used for the demo and the study): local server.** After training and merging:

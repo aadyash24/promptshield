@@ -73,7 +73,7 @@ Open http://localhost:8080 in Chrome, load a model, run all 15 prompts, tick "Me
 
 ```
 npx wxt build                                   # then load .output/chrome-mv3 in chrome://extensions
-cd finetune && python serve.py --regex-only     # or --base ... --adapter ... for the fine-tuned model
+cd finetune && python serve.py --regex-only     # or --token-model out/tok, or --base ... --adapter ... for a fine-tuned model
 open http://127.0.0.1:8765/assign?pid=P01       # balanced active/silent, hidden from the participant
 python study/e2e/run.py                         # browser test of the whole flow (needs Playwright)
 ```
