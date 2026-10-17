@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """LoRA fine-tune a small instruct model to output sensitive-info findings as JSON.
 
-    python train_lora.py --base Qwen/Qwen2.5-1.5B-Instruct --out out/qwen15
+    python train_lora.py --base Qwen/Qwen3-1.7B --out out/qwen3-17
 
 Needs a GPU (a free Colab T4 works). Plain Hugging Face Trainer plus peft, no other training
 library, so it is less likely to break when versions change. Loss is computed only on the
@@ -19,7 +19,7 @@ import torch
 from peft import LoraConfig, get_peft_model
 from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments
 
-from prompt import build_messages, target_json
+from prompt import chat_prompt, target_json
 
 HERE = Path(__file__).parent
 
@@ -30,7 +30,7 @@ def load_jsonl(name: str):
 
 def encode(row, tok, max_len: int):
     """Tokenize one example. Labels are -100 (ignored) everywhere except the answer."""
-    prompt_text = tok.apply_chat_template(build_messages(row["prompt"]), tokenize=False, add_generation_prompt=True)
+    prompt_text = chat_prompt(tok, row["prompt"])
     prompt_ids = tok(prompt_text, add_special_tokens=False)["input_ids"]
     answer_ids = tok(target_json(row["findings"]) + tok.eos_token, add_special_tokens=False)["input_ids"]
     ids = prompt_ids + answer_ids
@@ -58,7 +58,7 @@ class Collator:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--base", default="Qwen/Qwen2.5-1.5B-Instruct")
+    ap.add_argument("--base", default="Qwen/Qwen3-1.7B")
     ap.add_argument("--out", default=str(HERE / "out" / "adapter"))
     ap.add_argument("--epochs", type=float, default=2.0)
     ap.add_argument("--lr", type=float, default=2e-4)

@@ -4,8 +4,8 @@
 Examples:
   python evaluate.py --baseline regex --split test            # no GPU needed
   python evaluate.py --baseline oracle --split test            # sanity check, must score 1.0
-  python evaluate.py --base Qwen/Qwen2.5-1.5B-Instruct --split test              # zero-shot
-  python evaluate.py --base Qwen/Qwen2.5-1.5B-Instruct --adapter out/qwen15 --split test   # fine-tuned
+  python evaluate.py --base Qwen/Qwen3-1.7B --split test              # zero-shot
+  python evaluate.py --base Qwen/Qwen3-1.7B --adapter out/qwen3-17 --split test   # fine-tuned
 Results go to results/<name>/ : metrics.json, report.md, errors.jsonl
 """
 import argparse
@@ -42,7 +42,7 @@ def model_predictor(base: str, adapter: str | None, rows, batch_size: int, max_n
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
-    from prompt import build_messages
+    from prompt import chat_prompt
 
     tok = AutoTokenizer.from_pretrained(adapter or base)
     tok.padding_side = "left"
@@ -59,7 +59,7 @@ def model_predictor(base: str, adapter: str | None, rows, batch_size: int, max_n
     preds, valid = [], []
     for i in range(0, len(rows), batch_size):
         chunk = rows[i:i + batch_size]
-        texts = [tok.apply_chat_template(build_messages(r["prompt"]), tokenize=False, add_generation_prompt=True) for r in chunk]
+        texts = [chat_prompt(tok, r["prompt"]) for r in chunk]
         enc = tok(texts, return_tensors="pt", padding=True, add_special_tokens=False).to(device)
         with torch.no_grad():
             out = model.generate(**enc, max_new_tokens=max_new_tokens, do_sample=False, pad_token_id=tok.pad_token_id)

@@ -21,8 +21,8 @@ Everyone gets **one job in each area**. The jobs are the same size, and each per
 
 | Area | A | B | C | D |
 | --- | --- | --- | --- | --- |
-| **Model: training experiment** | LLM: Qwen2.5-1.5B with LoRA | LLM: Qwen2.5-0.5B with LoRA (small and faster) | Token classifier: distilroberta-base | Token classifier: roberta-base |
-| **Model: zero-shot base comparison** | Qwen2.5-0.5B-Instruct | Qwen2.5-1.5B-Instruct | Qwen2.5-3B-Instruct | SmolLM2-1.7B-Instruct |
+| **Model: training experiment** | LLM: Qwen3-1.7B with LoRA | LLM: Qwen3-0.6B with LoRA (small and faster) | Token classifier: distilroberta-base | Token classifier: roberta-base |
+| **Model: zero-shot base comparison** | Qwen3-0.6B | Qwen3-1.7B | Qwen3-4B | SmolLM2-1.7B-Instruct |
 | **Model: slice analysis** | Per-category results and errors for financial | Same for medical | Same for personal identifiers | Same for contact, work, secrets |
 | **Extension component** | Detection pipeline: server, latency, one-command start | Warning card and highlights, tested on real chat sites | Safer rewrite and the leak check, 10 before and after examples | Study mode: mock chat, logging, log analysis |
 | **Demo** | Scene 1: bank task, about 40 seconds | Scene 2: insurer task | Scene 3: rental task | Scene 4: script task |
@@ -59,8 +59,8 @@ The progress presentation is Oct 20 or 22 (confirm which). Plan for Tuesday and 
 ### Training commands (Saturday)
 
 ```
-A:  python train_lora.py --base Qwen/Qwen2.5-1.5B-Instruct --out out/a
-B:  python train_lora.py --base Qwen/Qwen2.5-0.5B-Instruct --out out/b
+A:  python train_lora.py --base Qwen/Qwen3-1.7B --out out/a
+B:  python train_lora.py --base Qwen/Qwen3-0.6B --out out/b
 C:  python train_token.py --base distilroberta-base --out out/c
 D:  python train_token.py --base roberta-base --out out/d
 ```

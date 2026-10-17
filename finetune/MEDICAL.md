@@ -35,16 +35,16 @@ python evaluate.py --baseline regex --split test --domain medical
 python evaluate.py --baseline oracle --split test --domain medical   # must be 1.0
 
 # zero-shot (Colab)
-python evaluate.py --base Qwen/Qwen2.5-1.5B-Instruct --split test --domain medical --name zs-b-medical
+python evaluate.py --base Qwen/Qwen3-1.7B --split test --domain medical --name zs-b-medical
 
 # fine-tune (Colab T4). Smoke test first.
-python train_lora.py --base Qwen/Qwen2.5-0.5B-Instruct --out out/b --smoke
-python train_lora.py --base Qwen/Qwen2.5-0.5B-Instruct --out out/b
-python evaluate.py --base Qwen/Qwen2.5-0.5B-Instruct --adapter out/b --split val --domain medical --name b-val-medical
+python train_lora.py --base Qwen/Qwen3-0.6B --out out/b --smoke
+python train_lora.py --base Qwen/Qwen3-0.6B --out out/b
+python evaluate.py --base Qwen/Qwen3-0.6B --adapter out/b --split val --domain medical --name b-val-medical
 
 # only after you pick the final model on val: run test once
-python evaluate.py --base Qwen/Qwen2.5-0.5B-Instruct --adapter out/b --split test --domain medical --name b-test-medical
-python evaluate.py --base Qwen/Qwen2.5-0.5B-Instruct --adapter out/b --split handwritten --domain medical --name b-hand-medical
+python evaluate.py --base Qwen/Qwen3-0.6B --adapter out/b --split test --domain medical --name b-test-medical
+python evaluate.py --base Qwen/Qwen3-0.6B --adapter out/b --split handwritten --domain medical --name b-hand-medical
 ```
 
 Token classifier alternative: `python train_token.py --base distilroberta-base --out out/b-tok`, then use

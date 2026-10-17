@@ -1,5 +1,5 @@
 # Training and model evaluation (Colab already has torch)
-transformers
+transformers>=4.51  # Qwen3 needs 4.51 or newer
 peft
 accelerate
 # Only needed to regenerate the dataset (the generated files are already committed)

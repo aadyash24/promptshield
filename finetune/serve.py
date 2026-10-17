@@ -2,7 +2,7 @@
 """Local server for the demo and the user study. Everything stays on this computer.
 
     python serve.py --token-model out/tok-distilroberta                       # token classifier (fast)
-    python serve.py --base Qwen/Qwen2.5-1.5B-Instruct --adapter out/adapter   # fine-tuned LLM
+    python serve.py --base Qwen/Qwen3-1.7B --adapter out/adapter   # fine-tuned LLM
     python serve.py --regex-only                                              # no model, for testing
 
 It does three jobs on http://127.0.0.1:8765 :
@@ -103,10 +103,10 @@ class Detector:
 
     def _model_detect(self, text: str) -> list[dict]:
         from metrics import parse_findings
-        from prompt import build_messages
+        from prompt import chat_prompt
 
         with self.lock:  # one generation at a time
-            chat = self.tok.apply_chat_template(build_messages(text), tokenize=False, add_generation_prompt=True)
+            chat = chat_prompt(self.tok, text)
             enc = self.tok(chat, return_tensors="pt", add_special_tokens=False).to(self.device)
             with self.torch.no_grad():
                 out = self.model.generate(**enc, max_new_tokens=self.max_new_tokens, do_sample=False,
@@ -256,7 +256,7 @@ def main():
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--token-model", help="folder of a token classifier from train_token.py (fastest option)")
-    ap.add_argument("--base", help="base model, e.g. Qwen/Qwen2.5-1.5B-Instruct (or a merged model folder)")
+    ap.add_argument("--base", help="base model, e.g. Qwen/Qwen3-1.7B (or a merged model folder)")
     ap.add_argument("--adapter", help="LoRA adapter folder from train_lora.py")
     ap.add_argument("--regex-only", action="store_true", help="skip the model, use rules only")
     ap.add_argument("--log-dir", default=str(HERE / "study_logs"))

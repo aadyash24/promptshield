@@ -32,7 +32,7 @@ In Colab choose Runtime, then Change runtime type, then T4 GPU. Then:
 **Step 1. Zero-shot comparison of candidate base models (Oct 4 milestone).** Same instructions, no training:
 
 ```python
-for m in ["Qwen/Qwen2.5-0.5B-Instruct", "Qwen/Qwen2.5-1.5B-Instruct"]:
+for m in ["Qwen/Qwen3-0.6B", "Qwen/Qwen3-1.7B"]:
     !python evaluate.py --base {m} --split test
 ```
 Add `meta-llama/Llama-3.2-1B-Instruct` if you have accepted its license on Hugging Face and logged in
@@ -41,19 +41,19 @@ Add `meta-llama/Llama-3.2-1B-Instruct` if you have accepted its license on Huggi
 **Step 2. Fine-tune (Oct 17 milestone).** Run `--smoke` first (about a minute), then the real run:
 
 ```python
-!python train_lora.py --base Qwen/Qwen2.5-1.5B-Instruct --smoke
-!python train_lora.py --base Qwen/Qwen2.5-1.5B-Instruct --out out/qwen15 --merge
+!python train_lora.py --base Qwen/Qwen3-1.7B --smoke
+!python train_lora.py --base Qwen/Qwen3-1.7B --out out/qwen3-17 --merge
 ```
 If the GPU runs out of memory, add `--grad-ckpt` or `--batch-size 2 --grad-accum 8`.
 
 **Step 3. Evaluate the fine-tuned model on both test sets:**
 
 ```python
-!python evaluate.py --base Qwen/Qwen2.5-1.5B-Instruct --adapter out/qwen15 --split test
-!python evaluate.py --base Qwen/Qwen2.5-1.5B-Instruct --adapter out/qwen15 --split handwritten
+!python evaluate.py --base Qwen/Qwen3-1.7B --adapter out/qwen3-17 --split test
+!python evaluate.py --base Qwen/Qwen3-1.7B --adapter out/qwen3-17 --split handwritten
 ```
 Each run writes `results/<name>/report.md` (a table you can paste into slides), `metrics.json`, and
-`errors.jsonl` (every miss and false alarm, for error analysis). Download `out/qwen15` and `results/`
+`errors.jsonl` (every miss and false alarm, for error analysis). Download `out/qwen3-17` and `results/`
 from Colab before the session ends.
 
 ## What to put on the progress slides
@@ -113,11 +113,11 @@ tokenizer styles (tests), a tiny random model trains and learns something in 20 
 
 ```
 python serve.py --base out/adapter/merged          # the merged model folder from train_lora.py --merge
-# or without merging:  python serve.py --base Qwen/Qwen2.5-1.5B-Instruct --adapter out/adapter
+# or without merging:  python serve.py --base Qwen/Qwen3-1.7B --adapter out/adapter
 ```
 The extension calls it at `http://127.0.0.1:8765/detect`. If the server is off, the extension falls back to
 regex only. On a laptop CPU a 1.5B model takes several seconds per prompt, so use a GPU or Apple silicon if
-you can, or try `Qwen/Qwen2.5-0.5B-Instruct`. The server drops any finding whose text is not in the prompt.
+you can, or try `Qwen/Qwen3-0.6B`. The server drops any finding whose text is not in the prompt.
 Run `python serve.py --regex-only` to test everything without a model.
 
 ## Older notes: in-browser options (optional)

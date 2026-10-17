@@ -33,6 +33,16 @@ def build_messages(prompt: str) -> list[dict]:
     ]
 
 
+def chat_prompt(tok, prompt: str) -> str:
+    """Chat-formatted input ending where the answer starts. Used for training, evaluation and serving.
+
+    Qwen3 models "think" by default and would open a <think> block. enable_thinking=False makes the
+    template add an empty one instead, so the JSON comes first. Other models' templates ignore the flag.
+    """
+    return tok.apply_chat_template(build_messages(prompt), tokenize=False, add_generation_prompt=True,
+                                   enable_thinking=False)
+
+
 def target_json(findings: list[dict]) -> str:
     """Training target. Offsets are dropped: the model copies text, code finds the position."""
     slim = [{"text": f["text"], "category": f["category"], "tier": f["tier"]} for f in findings]
