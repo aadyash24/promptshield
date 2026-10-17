@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Local server for the demo and the user study. Everything stays on this computer.
 
-    python serve.py --token-model out/tok-distilroberta                       # token classifier (fast)
+    python serve.py --token-model out/tok-distilbert                       # token classifier (fast)
     python serve.py --base Qwen/Qwen3-1.7B --adapter out/adapter   # fine-tuned LLM
     python serve.py --regex-only                                              # no model, for testing
 

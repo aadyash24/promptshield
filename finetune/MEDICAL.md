@@ -47,8 +47,16 @@ python evaluate.py --base Qwen/Qwen3-0.6B --adapter out/b --split test --domain 
 python evaluate.py --base Qwen/Qwen3-0.6B --adapter out/b --split handwritten --domain medical --name b-hand-medical
 ```
 
-Token classifier alternative: `python train_token.py --base distilroberta-base --out out/b-tok`, then use
-`--token-model out/b-tok` in place of `--base/--adapter`.
+The team compares two model families, so also train the token classifier (DistilBERT) on the same data
+and score it the same way:
+
+```bash
+python train_token.py --base distilbert-base-uncased --smoke
+python train_token.py --base distilbert-base-uncased --out out/b-tok
+python evaluate.py --token-model out/b-tok --split val --domain medical --name b-tok-val-medical
+# after the team picks the final model: test once
+python evaluate.py --token-model out/b-tok --split test --domain medical --name b-tok-test-medical
+```
 
 ## Numbers to put on the slide
 

@@ -21,8 +21,8 @@ Everyone gets **one job in each area**. The jobs are the same size, and each per
 
 | Area | A | B | C | D |
 | --- | --- | --- | --- | --- |
-| **Model: training experiment** | LLM: Qwen3-1.7B with LoRA | LLM: Qwen3-0.6B with LoRA (small and faster) | Token classifier: distilroberta-base | Token classifier: roberta-base |
-| **Model: zero-shot base comparison** | Qwen3-0.6B | Qwen3-1.7B | Qwen3-4B | SmolLM2-1.7B-Instruct |
+| **Model: training experiment** | LLM: Qwen3-1.7B with LoRA | LLM: Qwen3-0.6B with LoRA (small and faster) | Token classifier: distilbert-base-uncased | Token classifier: distilbert-base-cased |
+| **Model: zero-shot base comparison** | Qwen3-0.6B | Qwen3-1.7B | Qwen3-4B | Qwen3-1.7B (zero-shot, base for the size comparison) |
 | **Model: slice analysis** | Per-category results and errors for financial | Same for medical | Same for personal identifiers | Same for contact, work, secrets |
 | **Extension component** | Detection pipeline: server, latency, one-command start | Warning card and highlights, tested on real chat sites | Safer rewrite and the leak check, 10 before and after examples | Study mode: mock chat, logging, log analysis |
 | **Demo** | Scene 1: bank task, about 40 seconds | Scene 2: insurer task | Scene 3: rental task | Scene 4: script task |
@@ -61,14 +61,14 @@ The progress presentation is Oct 20 or 22 (confirm which). Plan for Tuesday and 
 ```
 A:  python train_lora.py --base Qwen/Qwen3-1.7B --out out/a
 B:  python train_lora.py --base Qwen/Qwen3-0.6B --out out/b
-C:  python train_token.py --base distilroberta-base --out out/c
-D:  python train_token.py --base roberta-base --out out/d
+C:  python train_token.py --base distilbert-base-uncased --out out/c
+D:  python train_token.py --base distilbert-base-cased --out out/d
 ```
 Always run `--smoke` first. Evaluate on `val`:
 - A and B: `python evaluate.py --base <same base> --adapter out/<you> --split val --name <you>-val`
 - C and D: `python evaluate.py --token-model out/<you> --split val --name <you>-val`
 
-The experiment compares two families: a generative LLM (reads the prompt, writes JSON findings) and a token classifier (labels each word). The token classifiers are about 100 times faster and tiny, while the LLMs may judge gray cases better. When the team picks the winner, weigh `val` scores **and** speed: the live demo needs an answer in well under a second. If SmolLM2 does not load for D's zero-shot run on Friday, use any other small open instruct model and tell the team which. Serve the winner with `python serve.py --token-model out/<you>` or `python serve.py --base ... --adapter out/<you>`.
+The experiment compares two families: a generative LLM (reads the prompt, writes JSON findings) and a token classifier (labels each word). The token classifiers are about 100 times faster and tiny, while the LLMs may judge gray cases better. When the team picks the winner, weigh `val` scores **and** speed: the live demo needs an answer in well under a second. Final comparison is DistilBERT (token classifier) against Qwen3 (LLM). The cased and uncased DistilBERT runs show whether capitalization helps with names, and the 0.6B and 1.7B Qwen3 runs show whether size matters. Every person reports results for their own domain from every run with `--domain`. Serve the winner with `python serve.py --token-model out/<you>` or `python serve.py --base ... --adapter out/<you>`.
 
 ### Your extension job, in detail
 

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Fine-tune a small encoder (BERT style) as a token classifier for sensitive information.
 
-    python train_token.py --base distilroberta-base --out out/tok-distilroberta
+    python train_token.py --base distilbert-base-uncased --out out/tok-distilbert
     python train_token.py --smoke        # 5 steps on 64 examples, proves the pipeline runs
 
 Much faster than the LLM route: a few minutes on a free Colab T4, about 100 times faster at
-inference, and small enough to run in the browser later. Good bases to compare (all cased, which
-matters for names): distilroberta-base, roberta-base, bert-base-cased, microsoft/deberta-v3-small.
-Evaluate with: python evaluate.py --token-model out/tok-distilroberta --split val
+inference, and small enough to run in the browser later. Bases to compare: distilbert-base-uncased (our default), distilbert-base-cased
+(keeps capital letters, which may help with names), roberta-base, microsoft/deberta-v3-small.
+Evaluate with: python evaluate.py --token-model out/tok-distilbert --split val
 """
 import argparse
 import json
@@ -29,7 +29,7 @@ def load_jsonl(name):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--base", default="distilroberta-base")
+    ap.add_argument("--base", default="distilbert-base-uncased")
     ap.add_argument("--out", default=str(HERE / "out" / "token"))
     ap.add_argument("--epochs", type=float, default=4.0)
     ap.add_argument("--lr", type=float, default=5e-5)
