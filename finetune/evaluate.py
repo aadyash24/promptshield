@@ -91,6 +91,8 @@ def main():
     ap.add_argument("--token-model", help="folder of a token classifier trained with train_token.py")
     ap.add_argument("--base", help="HF model id of the base model")
     ap.add_argument("--adapter", help="path to a LoRA adapter folder from train_lora.py")
+    ap.add_argument("--domain", choices=["medical", "financial", "personal"],
+                    help="score only this domain's categories (gold and predictions are filtered the same way)")
     ap.add_argument("--name", help="results folder name")
     ap.add_argument("--batch-size", type=int, default=8)
     ap.add_argument("--max-new-tokens", type=int, default=256)
@@ -115,6 +117,13 @@ def main():
     secs = time.time() - t0
 
     golds = [r["findings"] for r in rows]
+    if args.domain:
+        from taxonomy import BY_NAME
+        keep = lambda fs: [f for f in fs if f.get("category") in BY_NAME and BY_NAME[f["category"]].domain == args.domain]
+        golds = [keep(g) for g in golds]
+        preds = [keep(p) for p in preds]
+        label = f"{label} [{args.domain} only]"
+        name = f"{name}-{args.domain}" if not args.name else name
     m = score([r["prompt"] for r in rows], golds, preds)
     m["valid_json_rate"] = round(sum(valid) / len(valid), 4)
     m["seconds"] = round(secs, 1)
@@ -127,9 +136,9 @@ def main():
     report += f"\n\nValid output: {m['valid_json_rate']:.3f}. Time: {m['seconds_per_prompt']} s per prompt.\n"
     (out / "report.md").write_text(report, encoding="utf-8")
     with open(out / "errors.jsonl", "w", encoding="utf-8") as fh:
-        for r, p in zip(rows, preds):
-            gold_keys = {(f["text"].lower(), f["category"]) for f in r["findings"]}
-            pred_keys = {(f["text"].lower(), f.get("category")) for f in p}
+        for ri, r in enumerate(rows):
+            gold_keys = {(f["text"].lower(), f["category"]) for f in golds[ri]}
+            pred_keys = {(f["text"].lower(), f.get("category")) for f in preds[ri]}
             if gold_keys != pred_keys:
                 fh.write(json.dumps({"id": r["id"], "prompt": r["prompt"], "missed": sorted(gold_keys - pred_keys),
                                      "extra": sorted(pred_keys - gold_keys)}, ensure_ascii=False) + "\n")

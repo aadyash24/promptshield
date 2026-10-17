@@ -84,7 +84,7 @@ def maybe_lowercase(rng: random.Random, text: str, findings: list[dict]):
 
 def build_split(name, n, seed, holdout, neg_rate, compound_rate, seen):
     rng = random.Random(seed)
-    filler = Filler(seed + 1)
+    filler = Filler(seed + 1, holdout=holdout)
     sens, neg_hand, neg_gen = pools(holdout)
     rows, tries = [], 0
     while len(rows) < n and tries < n * 20:

@@ -83,3 +83,28 @@ def test_handwritten_builds_with_all_teammate_files_and_has_clean_and_sensitive(
     built = build_handwritten()  # fails loudly if a teammate's span is not in their prompt
     assert any(not r["findings"] for r in built) and any(r["findings"] for r in built)
     assert len({r["prompt"] for r in built}) == len(built), "duplicate handwritten prompt"
+
+
+def test_heldout_medical_values_do_not_leak_into_training_pools():
+    import slots
+
+    for held, train in ((slots.CONDITIONS_HELD, slots.CONDITIONS), (slots.SENSITIVE_DX_HELD, slots.SENSITIVE_DX),
+                        (slots.MEDICATIONS_HELD, slots.MEDICATIONS), (slots.CLINIC_SUFFIX_HELD, slots.CLINIC_SUFFIX)):
+        assert not set(map(str.lower, held)) & set(map(str.lower, train))
+
+
+def test_test_split_medical_values_are_all_unseen_in_train():
+    import slots
+
+    seen = set(map(str.lower, slots.CONDITIONS + slots.SENSITIVE_DX + slots.MEDICATIONS))
+    for r in rows("test"):
+        for f in r["findings"]:
+            if f["category"] in ("MED_CONDITION", "SENSITIVE_HEALTH", "MEDICATION"):
+                assert f["text"].lower() not in seen, (r["id"], f["text"])
+
+
+def test_template_ids_unique():
+    from templates import ALL as T
+
+    ids = [t[0] for t in T]
+    assert len(ids) == len(set(ids))

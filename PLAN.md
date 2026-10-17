@@ -13,7 +13,7 @@ A slice is a group of data categories, plus the persona that exercises them in t
 | | Slice | Categories | Study persona and task |
 | --- | --- | --- | --- |
 | **A** | Financial | `FIN_INSTITUTION`, `INCOME`, `BALANCE_DEBT`, `CARD_NUMBER`, `BANK_ACCOUNT` | Maya Okafor, `bank`: dispute a double charge |
-| **B** | Medical | `MED_PROVIDER`, `MED_CONDITION`, `MEDICATION`, `MED_RECORD_ID`, `SENSITIVE_HEALTH` | Daniel Reyes, `insurer`: appeal a denied claim |
+| **B** | Medical (see `finetune/MEDICAL.md`) | `MED_PROVIDER`, `MED_CONDITION`, `MEDICATION`, `MED_RECORD_ID`, `SENSITIVE_HEALTH` | Daniel Reyes, `insurer`: appeal a denied claim |
 | **C** | Personal identifiers | `PERSON_NAME`, `DATE_OF_BIRTH`, `GOV_ID`, `HOME_ADDRESS` | Priya Nair, `rental`: rental application note |
 | **D** | Contact, work, secrets | `EMAIL`, `PHONE`, `WORKPLACE_SCHOOL`, `CREDENTIAL` | Marcus Bell, `script`: debug a script with an API key |
 

@@ -2,103 +2,103 @@
   "train": {
     "records": 3200,
     "kinds": {
-      "negative": 1093,
-      "sensitive": 1803,
-      "compound": 304
+      "negative": 1067,
+      "sensitive": 1830,
+      "compound": 303
     },
-    "findings": 3812,
+    "findings": 4002,
     "by_tier": {
-      "1": 1066,
-      "2": 1815,
-      "3": 931
+      "1": 1199,
+      "2": 1846,
+      "3": 957
     },
     "by_category": {
-      "BALANCE_DEBT": 258,
-      "BANK_ACCOUNT": 59,
-      "CARD_NUMBER": 51,
-      "CREDENTIAL": 312,
-      "DATE_OF_BIRTH": 258,
-      "EMAIL": 263,
-      "FIN_INSTITUTION": 48,
-      "GOV_ID": 239,
-      "HOME_ADDRESS": 235,
-      "INCOME": 120,
-      "MEDICATION": 153,
-      "MED_CONDITION": 297,
-      "MED_PROVIDER": 116,
-      "MED_RECORD_ID": 188,
-      "PERSON_NAME": 670,
-      "PHONE": 231,
-      "SENSITIVE_HEALTH": 82,
-      "WORKPLACE_SCHOOL": 232
+      "BALANCE_DEBT": 208,
+      "BANK_ACCOUNT": 48,
+      "CARD_NUMBER": 63,
+      "CREDENTIAL": 273,
+      "DATE_OF_BIRTH": 226,
+      "EMAIL": 232,
+      "FIN_INSTITUTION": 54,
+      "GOV_ID": 200,
+      "HOME_ADDRESS": 219,
+      "INCOME": 111,
+      "MEDICATION": 257,
+      "MED_CONDITION": 384,
+      "MED_PROVIDER": 223,
+      "MED_RECORD_ID": 230,
+      "PERSON_NAME": 717,
+      "PHONE": 209,
+      "SENSITIVE_HEALTH": 143,
+      "WORKPLACE_SCHOOL": 205
     }
   },
   "val": {
     "records": 300,
     "kinds": {
-      "sensitive": 182,
-      "negative": 82,
-      "compound": 36
+      "negative": 87,
+      "sensitive": 176,
+      "compound": 37
     },
-    "findings": 425,
+    "findings": 423,
     "by_tier": {
       "1": 131,
       "2": 195,
-      "3": 99
+      "3": 97
     },
     "by_category": {
-      "BALANCE_DEBT": 18,
+      "BALANCE_DEBT": 17,
       "BANK_ACCOUNT": 8,
-      "CARD_NUMBER": 7,
-      "CREDENTIAL": 34,
-      "DATE_OF_BIRTH": 30,
-      "EMAIL": 29,
-      "FIN_INSTITUTION": 5,
-      "GOV_ID": 30,
-      "HOME_ADDRESS": 29,
-      "INCOME": 12,
-      "MEDICATION": 14,
-      "MED_CONDITION": 26,
-      "MED_PROVIDER": 17,
-      "MED_RECORD_ID": 16,
-      "PERSON_NAME": 78,
-      "PHONE": 37,
-      "SENSITIVE_HEALTH": 4,
-      "WORKPLACE_SCHOOL": 31
+      "CARD_NUMBER": 10,
+      "CREDENTIAL": 29,
+      "DATE_OF_BIRTH": 27,
+      "EMAIL": 25,
+      "FIN_INSTITUTION": 3,
+      "GOV_ID": 23,
+      "HOME_ADDRESS": 27,
+      "INCOME": 11,
+      "MEDICATION": 21,
+      "MED_CONDITION": 33,
+      "MED_PROVIDER": 24,
+      "MED_RECORD_ID": 17,
+      "PERSON_NAME": 82,
+      "PHONE": 34,
+      "SENSITIVE_HEALTH": 10,
+      "WORKPLACE_SCHOOL": 22
     }
   },
   "test": {
     "records": 500,
     "kinds": {
       "sensitive": 260,
-      "negative": 204,
-      "compound": 36
+      "negative": 191,
+      "compound": 49
     },
-    "findings": 617,
+    "findings": 767,
     "by_tier": {
-      "1": 195,
-      "2": 275,
-      "3": 147
+      "1": 216,
+      "2": 360,
+      "3": 191
     },
     "by_category": {
-      "BALANCE_DEBT": 30,
-      "BANK_ACCOUNT": 31,
-      "CARD_NUMBER": 25,
-      "CREDENTIAL": 46,
-      "DATE_OF_BIRTH": 30,
-      "EMAIL": 24,
-      "FIN_INSTITUTION": 49,
-      "GOV_ID": 19,
-      "HOME_ADDRESS": 30,
-      "INCOME": 30,
-      "MEDICATION": 20,
-      "MED_CONDITION": 87,
-      "MED_PROVIDER": 28,
-      "MED_RECORD_ID": 13,
-      "PERSON_NAME": 94,
-      "PHONE": 24,
-      "SENSITIVE_HEALTH": 13,
-      "WORKPLACE_SCHOOL": 24
+      "BALANCE_DEBT": 20,
+      "BANK_ACCOUNT": 20,
+      "CARD_NUMBER": 7,
+      "CREDENTIAL": 32,
+      "DATE_OF_BIRTH": 40,
+      "EMAIL": 21,
+      "FIN_INSTITUTION": 34,
+      "GOV_ID": 18,
+      "HOME_ADDRESS": 25,
+      "INCOME": 20,
+      "MEDICATION": 87,
+      "MED_CONDITION": 126,
+      "MED_PROVIDER": 53,
+      "MED_RECORD_ID": 46,
+      "PERSON_NAME": 108,
+      "PHONE": 21,
+      "SENSITIVE_HEALTH": 68,
+      "WORKPLACE_SCHOOL": 21
     }
   }
 }

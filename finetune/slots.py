@@ -49,17 +49,36 @@ CONDITIONS = [
     "celiac disease", "epilepsy", "Crohn's disease", "polycystic ovary syndrome",
     "sleep apnea", "hypothyroidism", "psoriasis", "lupus", "anemia", "ADHD",
     "chronic back pain", "eczema", "high cholesterol", "ulcerative colitis", "fibromyalgia",
+    "acid reflux", "kidney stones", "a herniated disc", "depression-related insomnia", "tinnitus", "endometrial polyps",
 ]
 SENSITIVE_DX = [
     "HIV", "bipolar disorder", "clinical depression", "PTSD", "opioid use disorder",
     "alcohol use disorder", "schizophrenia", "hepatitis C", "generalized anxiety disorder",
-    "an eating disorder", "a BRCA1 mutation", "herpes",
+    "an eating disorder", "a BRCA1 mutation", "herpes", "gonorrhea", "panic disorder", "a past abortion", "methamphetamine addiction",
 ]
 MEDICATIONS = [
     "metformin 500 mg", "lisinopril", "an albuterol inhaler", "sertraline 50 mg",
     "levothyroxine", "atorvastatin", "insulin glargine", "Adderall", "prednisone",
     "amoxicillin", "omeprazole", "gabapentin 300 mg", "birth control pills", "Zoloft",
+    "cetirizine", "Lipitor 20 mg", "naproxen", "escitalopram", "Prozac", "PrEP", "methadone", "Ritalin",
 ]
+# Held-out medical values. The test split draws ONLY from these, so the test score measures
+# whether the model learned "this is a condition/medication", not whether it memorized names.
+CONDITIONS_HELD = [
+    "gout", "multiple sclerosis", "glaucoma", "endometriosis", "irritable bowel syndrome",
+    "chronic kidney disease", "atrial fibrillation", "osteoporosis", "vertigo", "Graves' disease",
+    "type 1 diabetes", "scoliosis",
+]
+SENSITIVE_DX_HELD = [
+    "chlamydia", "postpartum depression", "obsessive-compulsive disorder", "cocaine addiction",
+    "a Huntington's disease diagnosis", "borderline personality disorder", "a miscarriage",
+    "syphilis",
+]
+MEDICATIONS_HELD = [
+    "ibuprofen 800 mg", "warfarin", "Ozempic", "fluoxetine 20 mg", "Xanax", "montelukast",
+    "hydrochlorothiazide", "tramadol", "Humira", "Lexapro 10 mg",
+]
+CLINIC_SUFFIX_HELD = ["Imaging Center", "Dermatology Group", "Orthopedic Clinic", "Behavioral Health", "Oncology Institute"]
 BANKS = [
     "Chase", "Bank of America", "Wells Fargo", "Navy Federal", "Capital One", "Citibank",
     "US Bank", "Truist", "Fidelity", "Ally Bank", "Regions Bank", "First Horizon",
@@ -95,7 +114,8 @@ def luhn_digit(partial: str) -> str:
 class Filler:
     """Deterministic given a seed."""
 
-    def __init__(self, seed: int):
+    def __init__(self, seed: int, holdout: bool = False):
+        self.holdout = holdout
         self.r = random.Random(seed)
         self.fake = Faker("en_US")
         self.fake.seed_instance(seed)
@@ -193,18 +213,18 @@ class Filler:
 
     # medical
     def g_condition(self):
-        return self.r.choice(CONDITIONS)
+        return self.r.choice(CONDITIONS_HELD if self.holdout else CONDITIONS)
 
     def g_sensitive_dx(self):
-        return self.r.choice(SENSITIVE_DX)
+        return self.r.choice(SENSITIVE_DX_HELD if self.holdout else SENSITIVE_DX)
 
     def g_medication(self):
-        return self.r.choice(MEDICATIONS)
+        return self.r.choice(MEDICATIONS_HELD if self.holdout else MEDICATIONS)
 
     def g_provider(self):
         if self.r.random() < 0.4:
             return f"Dr. {self.fake.last_name()}"
-        return f"{self.fake.city()} {self.r.choice(CLINIC_SUFFIX)}"
+        return f"{self.fake.city()} {self.r.choice(CLINIC_SUFFIX_HELD if self.holdout else CLINIC_SUFFIX)}"
 
     def g_mrn(self):
         return "".join(self.r.choice(string.digits) for _ in range(self.r.choice([7, 8])))
