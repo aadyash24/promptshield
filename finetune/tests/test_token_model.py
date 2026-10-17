@@ -14,6 +14,9 @@ DATA = Path(__file__).resolve().parent.parent / "data"
 
 
 def rows(name, n=400):
+    if name == "handwritten":  # built on the fly: the generated file is not committed
+        from handwritten import build
+        return build()[:n]
     out = []
     for line in open(DATA / f"{name}.jsonl", encoding="utf-8"):
         out.append(json.loads(line))
