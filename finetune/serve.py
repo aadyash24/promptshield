@@ -9,6 +9,7 @@ It does three jobs on http://127.0.0.1:8765 :
   POST /detect   the extension sends a prompt, gets back findings as JSON
   POST /log      the extension sends study events. Only whitelisted fields are kept.
   /mock/         the mock chat page used in the study
+  /demo          the animated pipeline page, wired to the real detector (for presentations)
   /assign?pid=P01   balanced random active/silent assignment, then redirects to the mock chat
 
 Privacy: /detect never writes the prompt anywhere. /log rejects anything that is not an
@@ -29,6 +30,7 @@ from taxonomy import BY_NAME
 
 HERE = Path(__file__).parent
 MOCK_ROOT = (HERE.parent / "study" / "mock").resolve()
+DEMO_ROOT = (HERE.parent / "study" / "demo").resolve()
 MAX_PROMPT = 4000
 
 PID_RE = re.compile(r"^[A-Za-z0-9_-]{1,32}$")
@@ -240,6 +242,11 @@ def make_handler(detector: Detector, log_dir: Path, assigner: Assigner):
                     return self._send(400, b"pid must be letters, digits, - or _", "text/plain")
                 assigner.get(pid)  # the condition stays hidden from the participant
                 return self._send(302, b"", "text/plain", {"Location": f"/mock/?pid={pid}"})
+            if u.path in ("/demo", "/demo/"):
+                f = DEMO_ROOT / "index.html"
+                if not f.is_file():
+                    return self._send(404, b"not found", "text/plain")
+                return self._send(200, f.read_bytes(), TYPES[".html"])
             if u.path.startswith("/mock"):
                 rel = u.path[len("/mock"):].lstrip("/") or "index.html"
                 f = (MOCK_ROOT / rel).resolve()
@@ -272,6 +279,7 @@ def main():
     srv = ThreadingHTTPServer((args.host, args.port), handler)
     print(f"mode: {detector.mode}   logs: {log_dir}")
     print(f"mock chat: http://{args.host}:{args.port}/assign?pid=P01")
+    print(f"demo page: http://{args.host}:{args.port}/demo")
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
