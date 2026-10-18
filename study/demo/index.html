@@ -349,7 +349,9 @@ function detect(text,srv){
     for(const f of srv){ if(!f||typeof f.text!=='string'||f.text.length<2||!CATS[f.category])continue;
       let at=0;for(;;){const i=text.indexOf(f.text,at);if(i<0)break;model.push({id:uid++,start:i,end:i+f.text.length,text:f.text,cat:f.category,src:'model'});at=i+f.text.length}}
   }else{for(const d of MODEL)model=model.concat(findAll(d,text,'model'))}
-  model=dedupe(model);
+  // Placeholders such as [EMAIL_1] from an earlier safe copy are not sensitive, even if the model flags them.
+  const ph=[...text.matchAll(/\[[A-Z][A-Z_]*_\d+\]/g)].map(m=>[m.index,m.index+m[0].length]);
+  model=dedupe(model.filter(x=>!ph.some(([a,b])=>x.start<b&&x.end>a)));
   const merged=dedupe(rules.concat(model));
   const maxTier=merged.reduce((m,s)=>Math.max(m,CATS[s.cat].t),0);
   return{text,rules,hits,model,merged,overlaps:rules.length+model.length-merged.length,maxTier};

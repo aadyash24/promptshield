@@ -15,6 +15,10 @@ export interface Finding {
  */
 export function findingsToSpans(prompt: string, findings: Finding[]): Span[] {
   const spans: Span[] = [];
+  // Placeholders from an earlier safer rewrite, such as [EMAIL_1], are not sensitive. The model can
+  // mistake them for names or medications, so any span touching one is dropped.
+  const placeholders = [...prompt.matchAll(/\[[A-Z][A-Z_]*_\d+\]/g)].map((m) => [m.index ?? 0, (m.index ?? 0) + m[0].length]);
+  const touchesPlaceholder = (a: number, b: number) => placeholders.some(([ps, pe]) => a < (pe ?? 0) && b > (ps ?? 0));
   const seen = new Set<string>();
   for (const f of findings) {
     if (!f || typeof f.text !== 'string' || f.text.length < 2) continue;
@@ -25,7 +29,7 @@ export function findingsToSpans(prompt: string, findings: Finding[]): Span[] {
       const at = prompt.indexOf(f.text, from);
       if (at < 0) break;
       const key = `${at}:${at + f.text.length}`;
-      if (!seen.has(key)) {
+      if (!seen.has(key) && !touchesPlaceholder(at, at + f.text.length)) {
         seen.add(key);
         spans.push({
           start: at,
