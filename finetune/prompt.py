@@ -11,7 +11,7 @@ from taxonomy import CATEGORIES, DOMAINS, TIER_LABEL
 def _category_line() -> str:
     parts = []
     for domain in DOMAINS:
-        for tier in (1, 2):
+        for tier in (1, 2, 3):
             names = " ".join(c.name for c in CATEGORIES if c.domain == domain and c.tier == tier)
             parts.append(f"{domain}, tier {tier} ({TIER_LABEL[tier]}): {names}")
     return "\n".join(parts)

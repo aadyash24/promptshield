@@ -6,7 +6,7 @@
 
 Definitions (per task, one row per participant and task, using the LAST send in the task):
   disclosed        the sent message still contained at least one sensitive item
-  very_disclosed   the sent message contained a very sensitive (tier 2) item
+  tier3_disclosed  the sent message contained a tier 3 item
   warned           a warning card was visible when the message was sent (active condition only)
   would_warn       the detector flagged something while typing. In the silent condition no card is
                    shown, so this is how often a warning WOULD have appeared.
@@ -45,7 +45,7 @@ def task_rows(events):
         rows.append({
             "pid": pid, "cond": evs[0]["cond"], "task": task,
             "disclosed": bool(last.get("disclosed")),
-            "very_disclosed": last.get("max_tier") == 2 and bool(last.get("disclosed")),
+            "tier3_disclosed": last.get("max_tier") == 3 and bool(last.get("disclosed")),
             "n_items_sent": last.get("n", 0),
             "warned": bool(last.get("warned")),
             "would_warn": "detected" in names,
@@ -91,7 +91,7 @@ def report(rows):
     out.append(f"| Participants | {len({r['pid'] for r in act})} | {len({r['pid'] for r in sil})} |")
     out.append(f"| Tasks completed | {len(act)} | {len(sil)} |")
     out.append(f"| Disclosure rate (any sensitive item sent) | {pct(rate(act,'disclosed'))} | {pct(rate(sil,'disclosed'))} |")
-    out.append(f"| Very sensitive disclosure rate | {pct(rate(act,'very_disclosed'))} | {pct(rate(sil,'very_disclosed'))} |")
+    out.append(f"| Tier 3 disclosure rate | {pct(rate(act,'tier3_disclosed'))} | {pct(rate(sil,'tier3_disclosed'))} |")
     out.append(f"| Warning rate (card shown / would have shown) | {pct(rate(act,'warning_shown'))} | {pct(rate(sil,'would_warn'))} |")
     shown = [r for r in act if r["warning_shown"]]
     if shown:

@@ -10,11 +10,11 @@ import analyze_logs as al  # noqa: E402
 def write(tmp, pid, cond, tasks):
     lines = []
     for task, disclosed, warned in tasks:
-        lines.append({"pid": pid, "cond": cond, "task": task, "event": "detected", "n": 1, "max_tier": 2})
+        lines.append({"pid": pid, "cond": cond, "task": task, "event": "detected", "n": 1, "max_tier": 3})
         if warned:
             lines.append({"pid": pid, "cond": cond, "task": task, "event": "warning_shown", "n": 1})
         lines.append({"pid": pid, "cond": cond, "task": task, "event": "send", "n": int(disclosed),
-                      "max_tier": 2 if disclosed else 0, "disclosed": disclosed, "warned": warned, "ms": 4000})
+                      "max_tier": 3 if disclosed else 0, "disclosed": disclosed, "warned": warned, "ms": 4000})
     (tmp / f"{pid}.jsonl").write_text("\n".join(json.dumps(x) for x in lines))
 
 

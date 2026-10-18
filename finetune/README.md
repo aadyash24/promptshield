@@ -1,7 +1,7 @@
 # Fine-tuning a local sensitive-information detector
 
 Timeline milestones this folder covers: **Oct 4** (compare candidate local LLMs, pick a base),
-**Oct 10** (labeled dataset across financial, medical, personal identifiers, each with two tiers),
+**Oct 10** (labeled dataset across financial, medical, personal identifiers, each with three tiers),
 **Oct 17** (fine-tune, then precision and recall on a held-out test set).
 
 The model reads a prompt and returns JSON like
@@ -10,10 +10,9 @@ Code finds where each `text` sits in the prompt, so the model never has to count
 
 ## Read this first: what is an assumption
 
-1. **Information is grouped by type first (medical, finance, personal), then by two tiers:
-   1 = somewhat sensitive, 2 = very sensitive.** This is the team's current choice, and it differs from
-   the three tiers in the submitted proposal. The tiers live in `taxonomy.py`. To change one, edit that
-   file, then run `python make_dataset.py` again.
+1. **Information is grouped by type first (medical, finance, personal), then by three risk tiers:
+   1 = low, 2 = medium, 3 = high.** The tier assignments are the team's working choice. The tiers live in
+   `taxonomy.py`. To change one, edit that file, then run `python make_dataset.py` again.
 2. **The training data is synthetic**, built from templates with fake values. The test split uses
    templates the model never trains on, which is much harder than a random split, but it is still
    template language. `data/handwritten.jsonl` is the more honest test. **Each teammate should add
@@ -61,7 +60,7 @@ from Colab before the session ends.
 ## What to put on the progress slides
 
 - Table: regex baseline vs zero-shot model vs fine-tuned model, on `test` and on `handwritten`.
-- The number that matters for users: **recall on tier 2 (very sensitive)**, and the **false alarm rate on clean prompts**
+- The number that matters for users: **recall on tier 3 (high)**, and the **false alarm rate on clean prompts**
   (a warning that cries wolf trains people to ignore it, which is the human factors point).
 - Two or three real errors from `errors.jsonl`.
 - State the limits plainly: synthetic data, small handwritten set, one base model size.
@@ -84,7 +83,7 @@ from Colab before the session ends.
 Flag information the writer discloses about themselves or people they know. Do not flag general
 questions ("what is diabetes"), public figures, fictional characters, example formats like
 `XXX-XX-XXXX`, or vague symptoms with no named condition. Mental health, HIV and STIs, substance use,
-reproductive and genetic health are tier 2 (very sensitive). Copy each finding exactly as written.
+reproductive and genetic health are tier 3 (high). Copy each finding exactly as written.
 
 ## Option B: a token classifier (fast, recommended to compare)
 
