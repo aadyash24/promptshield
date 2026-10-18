@@ -42,6 +42,19 @@ def encode(prompt: str, findings: list[dict], tok, max_len: int = 256):
     return {"input_ids": enc["input_ids"], "attention_mask": enc["attention_mask"], "labels": labels}
 
 
+def _snap(prompt: str, s: int, e: int):
+    """Grow a span to whole words. Subword tokens can leave 'luten' for 'gluten' or '44' for '4471823'.
+    A span that starts at the period of 'Dr.' also takes the title in front of it."""
+    while s > 0 and prompt[s].isalnum() and prompt[s - 1].isalnum():
+        s -= 1
+    if prompt[s] == "." and s > 0 and prompt[s - 1].isalnum():
+        while s > 0 and prompt[s - 1].isalnum():
+            s -= 1
+    while e < len(prompt) and prompt[e].isalnum() and prompt[e - 1].isalnum():
+        e += 1
+    return s, e
+
+
 def decode(prompt: str, offsets, label_ids) -> list[dict]:
     """Turn per-token labels back into findings with exact text from the prompt."""
     spans, cur = [], None  # cur = [category, start, end]
@@ -66,6 +79,7 @@ def decode(prompt: str, offsets, label_ids) -> list[dict]:
         spans.append(cur)
     out = []
     for cat, s, e in spans:
+        s, e = _snap(prompt, s, e)
         text = prompt[s:e].rstrip()
         if text:
             out.append({"text": text, "category": cat, "tier": BY_NAME[cat].tier, "start": s, "end": s + len(text)})

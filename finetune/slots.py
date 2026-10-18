@@ -55,6 +55,7 @@ SENSITIVE_DX = [
     "HIV", "bipolar disorder", "clinical depression", "PTSD", "opioid use disorder",
     "alcohol use disorder", "schizophrenia", "hepatitis C", "generalized anxiety disorder",
     "an eating disorder", "a BRCA1 mutation", "herpes", "gonorrhea", "panic disorder", "a past abortion", "methamphetamine addiction",
+    "anxiety", "depression", "bulimia", "anorexia", "a stillbirth", "being HIV positive", "social anxiety disorder", "a heroin addiction",
 ]
 MEDICATIONS = [
     "metformin 500 mg", "lisinopril", "an albuterol inhaler", "sertraline 50 mg",
@@ -90,7 +91,11 @@ SCHOOLS = [
     "the University of Tennessee", "Pellissippi State", "Georgia Tech", "Ohio State", "Vanderbilt",
     "UNC Chapel Hill", "Oak Ridge National Laboratory", "Clemson", "Purdue", "Rutgers",
 ]
-CLINIC_SUFFIX = ["Medical Center", "Family Clinic", "Urgent Care", "Health Partners", "General Hospital", "Women's Health Center", "Cardiology Associates", "Pediatrics"]
+PLACE_WORDS = ["Lakeview", "Oakwood", "Summit", "Mercy", "Grace", "Covenant", "Providence", "Cedar Valley", "Pinecrest", "Heritage", "Harbor", "Westside"]
+PLACE_WORDS_HELD = ["Brookfield", "Ridgeway", "Fairmont", "Maple Grove", "Eastgate", "Willow Creek", "Northshore"]
+SAINTS = ["Luke", "Joseph", "Anne", "Vincent", "Francis", "Elizabeth"]
+SAINTS_HELD = ["Thomas", "Catherine", "Jude", "Agnes"]
+CLINIC_SUFFIX = ["Hospital", "Medical Group", "Family Practice", "Medical Center", "Family Clinic", "Urgent Care", "Health Partners", "General Hospital", "Women's Health Center", "Cardiology Associates", "Pediatrics"]
 HISTORICAL = ["Napoleon Bonaparte", "Marie Curie", "Abraham Lincoln", "Ada Lovelace", "Nelson Mandela", "Albert Einstein", "Frida Kahlo", "Alan Turing"]
 BOOKS = ["Pride and Prejudice", "The Great Gatsby", "1984", "To Kill a Mockingbird", "Dune", "Frankenstein", "The Hobbit"]
 COUNTRIES = ["Portugal", "Kenya", "Peru", "Vietnam", "Norway", "Chile", "Japan", "Morocco"]
@@ -219,12 +224,29 @@ class Filler:
         return self.r.choice(SENSITIVE_DX_HELD if self.holdout else SENSITIVE_DX)
 
     def g_medication(self):
-        return self.r.choice(MEDICATIONS_HELD if self.holdout else MEDICATIONS)
+        name = self.r.choice(MEDICATIONS_HELD if self.holdout else MEDICATIONS)
+        has_dose = any(ch.isdigit() for ch in name) or "inhaler" in name or "pills" in name
+        if not has_dose and self.r.random() < 0.4:
+            unit = self.r.choice(["mg", "mg", "mcg", "ml", "units"])
+            amount = self.r.choice([5, 10, 20, 25, 40, 50, 75, 100, 150, 200, 300])
+            sep = " " if self.r.random() < 0.7 else ""
+            return f"{name} {amount}{sep}{unit}"
+        return name
 
     def g_provider(self):
-        if self.r.random() < 0.4:
+        suffixes = CLINIC_SUFFIX_HELD if self.holdout else CLINIC_SUFFIX
+        words = PLACE_WORDS_HELD if self.holdout else PLACE_WORDS
+        saints = SAINTS_HELD if self.holdout else SAINTS
+        roll = self.r.random()
+        if roll < 0.25:
             return f"Dr. {self.fake.last_name()}"
-        return f"{self.fake.city()} {self.r.choice(CLINIC_SUFFIX_HELD if self.holdout else CLINIC_SUFFIX)}"
+        if roll < 0.35:
+            return f"Dr. {self.fake.first_name()} {self.fake.last_name()}"
+        if roll < 0.50:
+            return f"{self.r.choice(['Saint', 'St.'])} {self.r.choice(saints)}'s {self.r.choice(['Hospital', 'Medical Center'])}"
+        if roll < 0.75:
+            return f"{self.r.choice(words)} {self.r.choice(suffixes)}"
+        return f"{self.fake.city()} {self.r.choice(suffixes)}"
 
     def g_mrn(self):
         return "".join(self.r.choice(string.digits) for _ in range(self.r.choice([7, 8])))
