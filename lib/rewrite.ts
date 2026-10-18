@@ -1,9 +1,11 @@
 import { detectRegex } from './regex';
 
 export const REWRITE_SYSTEM_PROMPT =
-  'You rewrite messages for privacy. The message contains placeholders in square brackets such as [EMAIL_1] or [PERSON_1]. ' +
-  'Rewrite it so it reads naturally and keeps the question or request, but keep every placeholder exactly as written. ' +
-  'Never replace a placeholder with a real value and never invent personal details. Output only the rewritten message.';
+  'You rewrite messages so they can be sent to a chatbot without private details. ' +
+  'In the message, private details were already replaced by general wording such as "a medical condition", "my doctor" or "my email address". ' +
+  'Rewrite it so it reads naturally and still asks for exactly the same help. ' +
+  'Keep the general wording. Never add names, numbers, dates, places or any other specific detail, and never guess what was removed. ' +
+  'Output only the rewritten message.';
 
 export interface SafeResult {
   text: string;

@@ -6,10 +6,22 @@ import { safeRewrite } from '../lib/rewrite';
 const prompt = 'Email jane@example.com or call 865-555-0142, then email jane@example.com again.';
 
 describe('maskText', () => {
-  it('swaps spans for numbered placeholders and reuses them for repeats', () => {
+  it('swaps spans for general wording and reuses it for repeats', () => {
     const { masked, entries } = maskText(prompt, detectRegex(prompt));
-    expect(masked).toBe('Email [EMAIL_1] or call [PHONE_1], then email [EMAIL_1] again.');
-    expect(entries.map((e) => e.placeholder)).toEqual(['[EMAIL_1]', '[PHONE_1]']);
+    expect(masked).toBe('Email my email address or call my phone number, then email my email address again.');
+    expect(entries.map((e) => e.placeholder)).toEqual(['my email address', 'my phone number']);
+  });
+
+  it('says "another" for a second different value of the same kind', () => {
+    const text = 'Write to a@example.com and b@example.com.';
+    expect(maskText(text, detectRegex(text)).masked).toBe('Write to my email address and another email address.');
+  });
+
+  it('uses the detector category, such as a medical condition', () => {
+    const text = 'I was diagnosed with type 2 diabetes last year.';
+    const start = text.indexOf('type 2 diabetes');
+    const span = { start, end: start + 'type 2 diabetes'.length, type: 'OTHER' as const, text: 'type 2 diabetes', source: 'model' as const, category: 'MED_CONDITION' };
+    expect(maskText(text, [span]).masked).toBe('I was diagnosed with a medical condition last year.');
   });
 
   it('returns the text unchanged when nothing was found', () => {
@@ -23,17 +35,17 @@ describe('safeRewrite', () => {
   const originals = entries.map((e) => e.original);
 
   it('accepts a clean model rewrite', () => {
-    const out = 'Please contact [EMAIL_1] or [PHONE_1], and follow up by email.';
+    const out = 'Please contact my email address or my phone number, and follow up by email.';
     expect(safeRewrite(masked, originals, out)).toEqual({ text: out, usedModel: true });
   });
 
   it('falls back when the model leaks an original value', () => {
-    const out = 'Please contact jane@example.com or [PHONE_1].';
+    const out = 'Please contact jane@example.com or my phone number.';
     expect(safeRewrite(masked, originals, out)).toEqual({ text: masked, usedModel: false });
   });
 
   it('falls back when the model invents a new sensitive value', () => {
-    const out = 'Please contact [EMAIL_1] or 555-123-4567.';
+    const out = 'Please contact my email address or 555-123-4567.';
     expect(safeRewrite(masked, originals, out)).toEqual({ text: masked, usedModel: false });
   });
 
@@ -48,9 +60,9 @@ describe('safeRewrite', () => {
   });
 
   it('strips a chatty lead-in line and wrapping quotes', () => {
-    const out = 'Here is the rewritten message:\n"Please contact [EMAIL_1]."';
+    const out = 'Here is the rewritten message:\n"Please contact my email address."';
     expect(safeRewrite(masked, originals, out)).toEqual({
-      text: 'Please contact [EMAIL_1].',
+      text: 'Please contact my email address.',
       usedModel: true,
     });
   });

@@ -76,7 +76,7 @@ The experiment compares two families: a generative LLM (reads the prompt, writes
 | --- | --- | --- |
 | **A: detection pipeline** | Measure how long a prompt takes on CPU and on GPU or Apple silicon. Tune `--max-new-tokens`. Add a start script so the whole demo starts with one command. | A teammate starts the demo from the README alone. Timing numbers are in the team chat. |
 | **B: warning card and highlights** | Test on a textarea and a contenteditable box. Test on chatgpt.com, claude.ai, and gemini. Fix highlight bugs. Show the type of info and its tier (low, medium or high risk) in the card. | Screenshots from each site in the pull request. |
-| **C: safer rewrite** | Test "Use safer version" for your slice's category examples. Check the leak check still falls back to placeholders when the model leaks. Make placeholders readable, such as `[CARD_1]`. | 10 before and after examples for the slides. |
+| **C: safer rewrite** | Test "Use safer version" for your slice's category examples. Check the leak check still falls back to the general-wording version when the model leaks. Check the new prompt still asks for the same help. | 10 before and after examples for the slides. |
 | **D: study mode** | Walk through the mock chat as both conditions. Confirm the logs hold no prompt text. Run `python study/e2e/run.py` and `python analyze_logs.py` on the output. | The e2e test passes on your laptop. A sample results table exists. |
 
 ### What each person presents (about 10 minutes total)
@@ -137,7 +137,7 @@ the switch back used two tiers and are not comparable on the tier metrics. Retra
 
 ## Decision: DistilBERT detects, Qwen3 rewrites (Oct 18)
 - **Detection and categorization:** the fine-tuned DistilBERT token classifier, served by `finetune/serve.py --token-model <dir>`. The extension checks after a 60 ms pause. Regex runs instantly and DistilBERT adds context-based findings. Stale checks are cancelled so slow replies never queue up.
-- **Rewriting:** Qwen3 (1.7B, 4-bit, run in the browser with WebLLM) smooths the wording of a prompt whose sensitive parts were already replaced with placeholders. The rewrite is rescanned and replaced with the plain placeholder text if anything leaks. To try the smaller model, change `MODEL_ID` in `entrypoints/offscreen/main.ts`.
+- **Rewriting:** Qwen3 (1.7B, 4-bit, run in the browser with WebLLM) smooths the wording of a prompt whose sensitive parts were already replaced with general wording (for example "a medical condition", "my doctor"), so the new prompt asks for the same help without the private details. The rewrite is rescanned and replaced with the plain placeholder text if anything leaks. To try the smaller model, change `MODEL_ID` in `entrypoints/offscreen/main.ts`.
 - **Qwen3 as a detector:** the LoRA-tuned Qwen3-0.6B detector stays in the repo as the comparison for the report. On the handwritten medical set it was more precise than DistilBERT but about 6 times slower.
 - **Merge day:** only DistilBERT needs retraining on the merged data (about one minute on Colab).
 

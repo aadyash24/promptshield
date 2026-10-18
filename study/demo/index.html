@@ -158,7 +158,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 .stp.skip.on{background:var(--panel2);color:var(--muted);border-style:dashed}
 .rw{transition:opacity .25s}
 .rw s{color:var(--muted);text-decoration-color:var(--t3);text-decoration-thickness:2px}
-.ph{font:500 12.5px var(--mono);background:color-mix(in srgb,var(--ok) 16%,transparent);border-radius:3px;padding:1px 4px}
+.ph{font-weight:500;background:color-mix(in srgb,var(--ok) 16%,transparent);border-radius:3px;padding:1px 4px}
 .json{font:400 12px/1.6 var(--mono);background:var(--panel2);border-radius:6px;padding:10px 12px;overflow-x:auto;white-space:pre}
 .json div{opacity:0;transition:opacity .25s}.json div.in{opacity:1}
 .note{font-size:12.5px;color:var(--muted);margin-top:8px}
@@ -271,7 +271,7 @@ footer p{margin:0;max-width:75ch}
   </div>
 
   <footer>
-    <p>When this page is opened from the local server it asks the real fine-tuned DistilBERT model, and the pill at the top says so. Otherwise it uses a rule-based stand-in. In the real extension Qwen3 rewrites the prompt in the browser, which this page skips. Two tiers inside each type of info are the team's working choice.</p>
+    <p>When this page is opened from the local server it asks the real fine-tuned DistilBERT model, and the pill at the top says so. Otherwise it uses a rule-based stand-in. In the real extension Qwen3 also smooths the wording in the browser, which this page skips, so you see the safe copy it falls back to.</p>
     <p class="mono">Nothing leaves this device.</p>
   </footer>
 </div>
@@ -361,11 +361,17 @@ function markedHTML(text,spans,on){
   let h='',p=0;spans.slice().sort((a,b)=>a.start-b.start).forEach(s=>{h+=esc(text.slice(p,s.start))+`<mark class="m d-${CATS[s.cat].d}${on?' on':''}" data-id="${s.id}">${esc(text.slice(s.start,s.end))}</mark>`;p=s.end});
   return h+esc(text.slice(p));
 }
+const GEN={PERSON_NAME:'a person',WORKPLACE_SCHOOL:'my workplace',FIN_INSTITUTION:'my bank',MED_PROVIDER:'my doctor',EMAIL:'my email address',PHONE:'my phone number',HOME_ADDRESS:'my home address',DATE_OF_BIRTH:'my date of birth',INCOME:'my income',BALANCE_DEBT:'an amount',MED_CONDITION:'a medical condition',MEDICATION:'a medication',GOV_ID:'my ID number',CARD_NUMBER:'my card number',BANK_ACCOUNT:'my account number',CREDENTIAL:'my password',MED_RECORD_ID:'my medical record number',SENSITIVE_HEALTH:'a health condition'};
+// Same idea as lib/mask.ts in the extension: general wording instead of the private detail.
 function mask(det){
-  const cnt={};let out='',p=0;const list=det.merged;
-  list.forEach(s=>{const b=CATS[s.cat].p;cnt[b]=(cnt[b]||0)+1;out+=det.text.slice(p,s.start)+'\u0001'+b+'_'+cnt[b]+'\u0002';p=s.end});
+  const cnt={},seen={};let out='',p=0;
+  det.merged.forEach(s=>{
+    const key=s.cat+':'+s.text.toLowerCase();
+    if(!seen[key]){cnt[s.cat]=(cnt[s.cat]||0)+1;const base=GEN[s.cat]||'a detail';seen[key]=cnt[s.cat]>1?base.replace(/^(a|an|my) /,'another '):base}
+    out+=det.text.slice(p,s.start)+'\u0001'+seen[key]+'\u0002';p=s.end;
+  });
   out+=det.text.slice(p);
-  return{plain:out.replace(/\u0001/g,'[').replace(/\u0002/g,']'),html:esc(out).replace(/\u0001/g,'<span class="ph">[').replace(/\u0002/g,']</span>')};
+  return{plain:out.replace(/\u0001|\u0002/g,''),html:esc(out).replace(/\u0001/g,'<span class="ph">').replace(/\u0002/g,'</span>')};
 }
 
 const SCEN=[
@@ -391,7 +397,7 @@ const STAGES=[
  {n:'Merge',s:'Combine both layers',i:'merge',t:'Merge',d:'Findings from both layers are combined. Overlaps are resolved and the model wins ties.'},
  {n:'Categorize',s:'Type of info, 3 tiers',i:'cat',t:'Categorize',d:'Each span gets a type of info (medical, finance, personal), then one of three tiers (low, medium, high) inside that type.'},
  {n:'Decide',s:'Highest tier sets the warning',i:'decide',t:'Decide',d:'The highest tier sets the warning level. The hidden study group decides if the participant sees it.'},
- {n:'Rewrite + log',s:'Safe copy, event-only log',i:'log',t:'Rewrite and log',d:'A safe copy is built with placeholders and re-scanned. Only event data is logged, never the prompt.'}
+ {n:'Rewrite + log',s:'Safe copy, event-only log',i:'log',t:'Rewrite and log',d:'A safe copy is built with general wording in place of each private detail, then re-scanned. Only event data is logged, never the prompt.'}
 ];
 
 /* live detector: when this page is served by the local server it asks the real model */
