@@ -3,7 +3,7 @@
     "precision": 1.0,
     "recall": 1.0,
     "f1": 1.0,
-    "tp": 380,
+    "tp": 393,
     "fp": 0,
     "fn": 0
   },
@@ -11,7 +11,7 @@
     "precision": 1.0,
     "recall": 1.0,
     "f1": 1.0,
-    "tp": 380,
+    "tp": 393,
     "fp": 0,
     "fn": 0
   },
@@ -26,57 +26,57 @@
       "precision": 1.0,
       "recall": 1.0,
       "f1": 1.0,
-      "tp": 87,
+      "tp": 84,
       "fp": 0,
       "fn": 0,
-      "support": 87
+      "support": 84
     },
     "MED_CONDITION": {
       "precision": 1.0,
       "recall": 1.0,
       "f1": 1.0,
-      "tp": 126,
+      "tp": 113,
       "fp": 0,
       "fn": 0,
-      "support": 126
+      "support": 113
     },
     "MED_PROVIDER": {
       "precision": 1.0,
       "recall": 1.0,
       "f1": 1.0,
-      "tp": 53,
+      "tp": 63,
       "fp": 0,
       "fn": 0,
-      "support": 53
+      "support": 63
     },
     "MED_RECORD_ID": {
       "precision": 1.0,
       "recall": 1.0,
       "f1": 1.0,
-      "tp": 46,
+      "tp": 66,
       "fp": 0,
       "fn": 0,
-      "support": 46
+      "support": 66
     },
     "SENSITIVE_HEALTH": {
       "precision": 1.0,
       "recall": 1.0,
       "f1": 1.0,
-      "tp": 68,
+      "tp": 67,
       "fp": 0,
       "fn": 0,
-      "support": 68
+      "support": 67
     }
   },
   "prompt_level": {
     "precision": 1.0,
     "recall": 1.0,
     "f1": 1.0,
-    "tp": 173,
+    "tp": 191,
     "fp": 0,
     "fn": 0,
-    "positive_prompts": 173,
-    "negative_prompts": 327,
+    "positive_prompts": 191,
+    "negative_prompts": 309,
     "false_alarm_rate": 0.0
   },
   "hallucination_rate": 0.0,

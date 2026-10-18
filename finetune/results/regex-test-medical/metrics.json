@@ -5,7 +5,7 @@
     "f1": 0.0,
     "tp": 0,
     "fp": 0,
-    "fn": 380
+    "fn": 393
   },
   "text_only": {
     "precision": 0.0,
@@ -13,7 +13,7 @@
     "f1": 0.0,
     "tp": 0,
     "fp": 0,
-    "fn": 380
+    "fn": 393
   },
   "tier_accuracy": 0.0,
   "per_tier_recall": {
@@ -28,8 +28,8 @@
       "f1": 0.0,
       "tp": 0,
       "fp": 0,
-      "fn": 87,
-      "support": 87
+      "fn": 84,
+      "support": 84
     },
     "MED_CONDITION": {
       "precision": 0.0,
@@ -37,8 +37,8 @@
       "f1": 0.0,
       "tp": 0,
       "fp": 0,
-      "fn": 126,
-      "support": 126
+      "fn": 113,
+      "support": 113
     },
     "MED_PROVIDER": {
       "precision": 0.0,
@@ -46,8 +46,8 @@
       "f1": 0.0,
       "tp": 0,
       "fp": 0,
-      "fn": 53,
-      "support": 53
+      "fn": 63,
+      "support": 63
     },
     "MED_RECORD_ID": {
       "precision": 0.0,
@@ -55,8 +55,8 @@
       "f1": 0.0,
       "tp": 0,
       "fp": 0,
-      "fn": 46,
-      "support": 46
+      "fn": 66,
+      "support": 66
     },
     "SENSITIVE_HEALTH": {
       "precision": 0.0,
@@ -64,8 +64,8 @@
       "f1": 0.0,
       "tp": 0,
       "fp": 0,
-      "fn": 68,
-      "support": 68
+      "fn": 67,
+      "support": 67
     }
   },
   "prompt_level": {
@@ -74,9 +74,9 @@
     "f1": 0.0,
     "tp": 0,
     "fp": 0,
-    "fn": 173,
-    "positive_prompts": 173,
-    "negative_prompts": 327,
+    "fn": 191,
+    "positive_prompts": 191,
+    "negative_prompts": 309,
     "false_alarm_rate": 0.0
   },
   "hallucination_rate": 0.0,
