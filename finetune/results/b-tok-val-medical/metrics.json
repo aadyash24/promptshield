@@ -1,0 +1,87 @@
+{
+  "strict": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "tp": 105,
+    "fp": 0,
+    "fn": 0
+  },
+  "text_only": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "tp": 105,
+    "fp": 0,
+    "fn": 0
+  },
+  "tier_accuracy": 1.0,
+  "per_tier_recall": {
+    "1": 1.0,
+    "2": 1.0,
+    "3": 1.0
+  },
+  "per_category": {
+    "MEDICATION": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "tp": 21,
+      "fp": 0,
+      "fn": 0,
+      "support": 21
+    },
+    "MED_CONDITION": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "tp": 33,
+      "fp": 0,
+      "fn": 0,
+      "support": 33
+    },
+    "MED_PROVIDER": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "tp": 24,
+      "fp": 0,
+      "fn": 0,
+      "support": 24
+    },
+    "MED_RECORD_ID": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "tp": 17,
+      "fp": 0,
+      "fn": 0,
+      "support": 17
+    },
+    "SENSITIVE_HEALTH": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "tp": 10,
+      "fp": 0,
+      "fn": 0,
+      "support": 10
+    }
+  },
+  "prompt_level": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "tp": 65,
+    "fp": 0,
+    "fn": 0,
+    "positive_prompts": 65,
+    "negative_prompts": 235,
+    "false_alarm_rate": 0.0
+  },
+  "hallucination_rate": 0.0,
+  "n_prompts": 300,
+  "valid_json_rate": 1.0,
+  "seconds": 8.6,
+  "seconds_per_prompt": 0.029
+}
