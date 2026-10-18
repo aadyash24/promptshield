@@ -19,7 +19,7 @@ export function findingsToSpans(prompt: string, findings: Finding[]): Span[] {
   for (const f of findings) {
     if (!f || typeof f.text !== 'string' || f.text.length < 2) continue;
     const category = typeof f.category === 'string' ? f.category : 'OTHER';
-    const tier = f.tier === 1 || f.tier === 2 || f.tier === 3 ? f.tier : undefined;
+    const tier = f.tier === 1 || f.tier === 2 ? f.tier : undefined;
     let from = 0;
     for (;;) {
       const at = prompt.indexOf(f.text, from);

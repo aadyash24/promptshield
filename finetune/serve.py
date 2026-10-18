@@ -140,7 +140,7 @@ def clean_event(raw: dict) -> dict | None:
     if isinstance(cats, list) and len(cats) <= 30 and all(isinstance(c, str) and CAT_RE.match(c) for c in cats):
         out["categories"] = cats
     tier = raw.get("max_tier")
-    if tier in (0, 1, 2, 3):
+    if tier in (0, 1, 2):
         out["max_tier"] = tier
     for key in ("disclosed", "warned"):
         if isinstance(raw.get(key), bool):

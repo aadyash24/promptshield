@@ -32,7 +32,7 @@ export interface StudyEvent {
   n?: number;
   /** Category names such as GOV_ID. Names only, never values. */
   categories?: string[];
-  /** Highest risk tier among the items (1 to 3). */
+  /** Highest tier among the items (1 somewhat sensitive, 2 very sensitive). */
   max_tier?: number;
   /** For 'send': did the sent message still contain sensitive items. */
   disclosed?: boolean;

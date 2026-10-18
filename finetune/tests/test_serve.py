@@ -13,7 +13,7 @@ import serve  # noqa: E402
 
 def good(**kw):
     base = {"pid": "P01", "cond": "active", "task": "bank", "event": "send", "n": 2,
-            "categories": ["GOV_ID"], "max_tier": 3, "disclosed": True, "warned": False, "ms": 1200}
+            "categories": ["GOV_ID"], "max_tier": 2, "disclosed": True, "warned": False, "ms": 1200}
     base.update(kw)
     return base
 

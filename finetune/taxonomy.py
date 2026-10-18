@@ -1,11 +1,10 @@
-"""Single source of truth for categories and risk tiers.
+"""Single source of truth for categories, domains and risk tiers.
 
-ASSUMPTION: these tier assignments are OUR PROPOSAL, not copied from the project
-proposal. If the proposal defines the three risk tiers differently, edit CATEGORIES
-below (name, domain, tier), then re-run make_dataset.py. Nothing else needs to change.
-
-Tier 1 = low, 2 = medium, 3 = high. Domains match the timeline: personal identifiers,
-financial, medical.
+Structure: every finding has a TYPE OF INFO (domain: personal | financial | medical) and,
+within that domain, one of two tiers: 1 = somewhat sensitive, 2 = very sensitive.
+These assignments are the team's working choice. To change one, edit CATEGORIES below
+(name, domain, tier), then re-run make_dataset.py. Nothing else needs to change.
+Note: the submitted proposal describes three tiers. See PLAN.md for the note on this change.
 """
 from dataclasses import dataclass
 
@@ -19,31 +18,32 @@ class Category:
 
 
 CATEGORIES = [
-    # Tier 1: low. Weakly identifying on its own.
+    # Tier 1: somewhat sensitive. Identifies a person or a private detail, but is not a direct path to fraud or serious harm.
     Category("PERSON_NAME", "personal", 1, "Name of a private individual (the writer or someone they know). Not public figures or fictional characters."),
     Category("WORKPLACE_SCHOOL", "personal", 1, "Employer, school, or university the writer is affiliated with."),
     Category("FIN_INSTITUTION", "financial", 1, "Bank, credit union, or broker the writer uses."),
     Category("MED_PROVIDER", "medical", 1, "Doctor, clinic, or hospital the writer or a relative has used."),
-    # Tier 2: medium. Identifies or exposes a private detail.
-    Category("EMAIL", "personal", 2, "Email address."),
-    Category("PHONE", "personal", 2, "Phone number."),
-    Category("HOME_ADDRESS", "personal", 2, "Street address where someone lives."),
-    Category("DATE_OF_BIRTH", "personal", 2, "Date of birth of the writer or someone they know."),
-    Category("INCOME", "financial", 2, "The writer's salary or income."),
-    Category("BALANCE_DEBT", "financial", 2, "Account balance, loan, or debt amount of the writer."),
-    Category("MED_CONDITION", "medical", 2, "Ordinary medical condition the writer or a relative has."),
-    Category("MEDICATION", "medical", 2, "Medication the writer or a relative takes."),
-    # Tier 3: high. Direct path to fraud, theft, or serious harm.
-    Category("GOV_ID", "personal", 3, "SSN, passport number, or driver's license number."),
-    Category("CARD_NUMBER", "financial", 3, "Payment card number."),
-    Category("BANK_ACCOUNT", "financial", 3, "Bank account or routing number."),
-    Category("CREDENTIAL", "financial", 3, "Password, PIN, API key, or access token."),
-    Category("MED_RECORD_ID", "medical", 3, "Medical record number or health insurance member ID."),
-    Category("SENSITIVE_HEALTH", "medical", 3, "Mental health, HIV or STI, substance use, reproductive or genetic health information."),
+    Category("EMAIL", "personal", 1, "Email address."),
+    Category("PHONE", "personal", 1, "Phone number."),
+    Category("HOME_ADDRESS", "personal", 1, "Street address where someone lives."),
+    Category("DATE_OF_BIRTH", "personal", 1, "Date of birth of the writer or someone they know."),
+    Category("INCOME", "financial", 1, "The writer's salary or income."),
+    Category("BALANCE_DEBT", "financial", 1, "Account balance, loan, or debt amount of the writer."),
+    Category("MED_CONDITION", "medical", 1, "Ordinary medical condition the writer or a relative has."),
+    Category("MEDICATION", "medical", 1, "Medication the writer or a relative takes."),
+    # Tier 2: very sensitive. Direct path to fraud, theft, or serious harm.
+    Category("GOV_ID", "personal", 2, "SSN, passport number, or driver's license number."),
+    Category("CARD_NUMBER", "financial", 2, "Payment card number."),
+    Category("BANK_ACCOUNT", "financial", 2, "Bank account or routing number."),
+    Category("CREDENTIAL", "financial", 2, "Password, PIN, API key, or access token."),
+    Category("MED_RECORD_ID", "medical", 2, "Medical record number or health insurance member ID."),
+    Category("SENSITIVE_HEALTH", "medical", 2, "Mental health, HIV or STI, substance use, reproductive or genetic health information."),
 ]
 
 BY_NAME = {c.name: c for c in CATEGORIES}
-TIER_LABEL = {1: "low", 2: "medium", 3: "high"}
+TIER_LABEL = {1: "somewhat sensitive", 2: "very sensitive"}
+DOMAINS = ("medical", "financial", "personal")
+DOMAIN_LABEL = {"medical": "Medical", "financial": "Finance", "personal": "Personal"}
 
 # Annotation policy, shared by the generator and the handwritten test set.
 POLICY = [

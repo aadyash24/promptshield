@@ -7,7 +7,7 @@ from baseline_regex import predict  # noqa: E402
 from metrics import norm, parse_findings, score  # noqa: E402
 
 
-def f(text, cat="EMAIL", tier=2):
+def f(text, cat="EMAIL", tier=1):
     return {"text": text, "category": cat, "tier": tier}
 
 
@@ -43,21 +43,21 @@ def test_text_normalization_ignores_case_and_trailing_punctuation():
 
 
 def test_tier_accuracy_and_per_tier_recall():
-    gold = [[f("a@b.com", "EMAIL", 2), f("123-45-6789", "GOV_ID", 3)]]
-    pred = [[f("a@b.com", "EMAIL", 2), f("123-45-6789", "GOV_ID", 1)]]
+    gold = [[f("a@b.com", "EMAIL", 1), f("123-45-6789", "GOV_ID", 2)]]
+    pred = [[f("a@b.com", "EMAIL", 1), f("123-45-6789", "GOV_ID", 1)]]
     s = score(["a@b.com 123-45-6789"], gold, pred)
     assert s["tier_accuracy"] == 0.5
-    assert s["per_tier_recall"]["2"] == 1.0 and s["per_tier_recall"]["3"] == 1.0
+    assert s["per_tier_recall"]["1"] == 1.0 and s["per_tier_recall"]["2"] == 1.0
 
 
 def test_parse_findings_handles_messy_output():
-    good = 'Sure! {"findings":[{"text":"a@b.com","category":"EMAIL","tier":2}]} hope that helps'
+    good = 'Sure! {"findings":[{"text":"a@b.com","category":"EMAIL","tier":1}]} hope that helps'
     items, ok = parse_findings(good)
     assert ok and items[0]["text"] == "a@b.com"
     assert parse_findings("no json here") == ([], False)
     assert parse_findings('{"findings": "oops"}') == ([], False)
     items, ok = parse_findings('{"findings":[{"text":"x","category":"EMAIL"}]}')
-    assert ok and items[0]["tier"] == 2  # missing tier is filled from the taxonomy
+    assert ok and items[0]["tier"] == 1  # missing tier is filled from the taxonomy
 
 
 def test_regex_baseline_finds_structured_values_only():

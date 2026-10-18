@@ -1,8 +1,8 @@
 # Medical slice guide (slice B)
 
-You own five categories: `MED_PROVIDER` (tier 1), `MED_CONDITION` and `MEDICATION` (tier 2),
-`MED_RECORD_ID` and `SENSITIVE_HEALTH` (tier 3). Tiers are our proposal. Check them against the
-proposal and edit `taxonomy.py` if they differ, then rerun `make_dataset.py`.
+You own five categories: `MED_PROVIDER`, `MED_CONDITION` and `MEDICATION` (tier 1, somewhat sensitive),
+`MED_RECORD_ID` and `SENSITIVE_HEALTH` (tier 2, very sensitive). Edit `taxonomy.py` to change a tier,
+then rerun `make_dataset.py`.
 
 ## How the team split works
 

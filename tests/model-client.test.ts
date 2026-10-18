@@ -24,17 +24,17 @@ describe('findingsToSpans', () => {
   });
 
   it('keeps unknown categories as OTHER instead of dropping them', () => {
-    const [s] = findingsToSpans('I take sertraline daily', [{ text: 'sertraline', category: 'MEDICATION', tier: 2 }]);
+    const [s] = findingsToSpans('I take sertraline daily', [{ text: 'sertraline', category: 'MEDICATION', tier: 1 }]);
     expect(s?.type).toBe('OTHER');
     expect(categoryOf(s!)).toBe('MEDICATION');
-    expect(tierOf(s!)).toBe(2);
+    expect(tierOf(s!)).toBe(1);
   });
 
   it('model span wins over a regex span for the same text so the card shows the finer label', () => {
     const text = 'ssn 527-61-3849';
     const merged = mergeSpans([
       ...detectRegex(text),
-      ...findingsToSpans(text, [{ text: '527-61-3849', category: 'GOV_ID', tier: 3 }]),
+      ...findingsToSpans(text, [{ text: '527-61-3849', category: 'GOV_ID', tier: 2 }]),
     ]);
     expect(merged).toHaveLength(1);
     expect(merged[0]?.source).toBe('model');
@@ -45,10 +45,10 @@ describe('logging helpers for regex spans', () => {
   it('maps regex types to categories and tiers', () => {
     const [ssn] = detectRegex('my ssn is 527-61-3849');
     expect(categoryOf(ssn!)).toBe('GOV_ID');
-    expect(tierOf(ssn!)).toBe(3);
+    expect(tierOf(ssn!)).toBe(2);
     const [mail] = detectRegex('mail a.b@example.com');
     expect(categoryOf(mail!)).toBe('EMAIL');
-    expect(tierOf(mail!)).toBe(2);
+    expect(tierOf(mail!)).toBe(1);
   });
 });
 

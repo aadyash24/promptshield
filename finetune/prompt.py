@@ -5,14 +5,15 @@ it between those steps. It is generated from taxonomy.py so categories stay in s
 """
 import json
 
-from taxonomy import CATEGORIES, TIER_LABEL
+from taxonomy import CATEGORIES, DOMAINS, TIER_LABEL
 
 
 def _category_line() -> str:
     parts = []
-    for tier in (1, 2, 3):
-        names = " ".join(c.name for c in CATEGORIES if c.tier == tier)
-        parts.append(f"tier {tier} ({TIER_LABEL[tier]}): {names}")
+    for domain in DOMAINS:
+        for tier in (1, 2):
+            names = " ".join(c.name for c in CATEGORIES if c.domain == domain and c.tier == tier)
+            parts.append(f"{domain}, tier {tier} ({TIER_LABEL[tier]}): {names}")
     return "\n".join(parts)
 
 
@@ -22,7 +23,7 @@ SYSTEM_PROMPT = (
     "as written. Ignore general questions, public figures, fictional characters, and example formats.\n"
     'Reply with only JSON: {"findings":[{"text":"...","category":"...","tier":N}]}, '
     'or {"findings":[]} if nothing is sensitive.\n'
-    "Categories by risk tier:\n" + _category_line()
+    "Categories by type of information and tier:\n" + _category_line()
 )
 
 

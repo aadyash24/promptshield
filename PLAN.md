@@ -75,7 +75,7 @@ The experiment compares two families: a generative LLM (reads the prompt, writes
 | Person | Do this | Done when |
 | --- | --- | --- |
 | **A: detection pipeline** | Measure how long a prompt takes on CPU and on GPU or Apple silicon. Tune `--max-new-tokens`. Add a start script so the whole demo starts with one command. | A teammate starts the demo from the README alone. Timing numbers are in the team chat. |
-| **B: warning card and highlights** | Test on a textarea and a contenteditable box. Test on chatgpt.com, claude.ai, and gemini. Fix highlight bugs. Show the risk tier in the card (colors or a label). | Screenshots from each site in the pull request. |
+| **B: warning card and highlights** | Test on a textarea and a contenteditable box. Test on chatgpt.com, claude.ai, and gemini. Fix highlight bugs. Show the type of info and its tier (somewhat or very sensitive) in the card. | Screenshots from each site in the pull request. |
 | **C: safer rewrite** | Test "Use safer version" for your slice's category examples. Check the leak check still falls back to placeholders when the model leaks. Make placeholders readable, such as `[CARD_1]`. | 10 before and after examples for the slides. |
 | **D: study mode** | Walk through the mock chat as both conditions. Confirm the logs hold no prompt text. Run `python study/e2e/run.py` and `python analyze_logs.py` on the output. | The e2e test passes on your laptop. A sample results table exists. |
 
@@ -129,3 +129,9 @@ Same rule: the same schedule for everyone, with specifics from your slice.
 | IRB or instructor approval takes too long | Ask now. Do not recruit until it is settled. Use the extra time to improve the model. |
 | Fewer than 16 participants | Report the actual number and describe results as exploratory. |
 | Someone is unavailable | Their review partner takes over their tasks for that phase. |
+
+## Decision: two tiers instead of three (Oct 18)
+Information is grouped by type (medical, finance, personal). Within each type there are two tiers:
+somewhat sensitive and very sensitive. The submitted proposal describes three tiers (high, medium, low), so the
+final report should state that we simplified to two. Results saved before this change in `finetune/results/`
+used the old three tiers and are not comparable on the tier metrics. Retrain on merge day with the new labels.

@@ -88,7 +88,7 @@ def score(prompts: list[str], golds: list[list[dict]], preds: list[list[dict]]) 
         "strict": _prf(*tot["strict"]),
         "text_only": _prf(*tot["text_only"]),
         "tier_accuracy": round(tier_correct / tier_total, 4) if tier_total else 0.0,
-        "per_tier_recall": {str(t): round(tier_hit[t] / tier_gold[t], 4) if tier_gold[t] else None for t in (1, 2, 3)},
+        "per_tier_recall": {str(t): round(tier_hit[t] / tier_gold[t], 4) if tier_gold[t] else None for t in (1, 2)},
         "per_category": {c: {**_prf(*v), "support": v[0] + v[2]} for c, v in sorted(cat.items())},
         "prompt_level": prompt_level,
         "hallucination_rate": round(hallucinated / n_pred, 4) if n_pred else 0.0,
@@ -132,7 +132,7 @@ def report_markdown(name: str, m: dict) -> str:
         f"False alarm rate on clean prompts: {pl['false_alarm_rate']:.3f} "
         f"({pl['negative_prompts']} clean, {pl['positive_prompts']} sensitive). "
         f"Tier accuracy on found items: {m['tier_accuracy']:.3f}. "
-        f"Recall by tier (1 low, 2 medium, 3 high): "
+        f"Recall by tier (1 somewhat sensitive, 2 very sensitive): "
         + ", ".join(f"{k}={v if v is not None else 'n/a'}" for k, v in m["per_tier_recall"].items())
         + f". Hallucinated findings: {m['hallucination_rate']:.3f}.",
         "",

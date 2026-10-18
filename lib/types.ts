@@ -17,8 +17,8 @@ export interface Span {
   source: 'regex' | 'gliner' | 'model';
   /** Fine-grained category from the fine-tuned detector, e.g. GOV_ID. */
   category?: string;
-  /** Risk tier from the fine-tuned detector. 3 is the most harmful to leak. */
-  tier?: 1 | 2 | 3;
+  /** Tier within its type of info: 1 = somewhat sensitive, 2 = very sensitive. */
+  tier?: 1 | 2;
 }
 
 /** Plain-words description used in the warning card. */
@@ -85,12 +85,25 @@ const TYPE_TO_CATEGORY: Record<PiiType, string> = {
   OTHER: 'OTHER',
 };
 
-const CATEGORY_TIER: Record<string, 1 | 2 | 3> = {
+const CATEGORY_TIER: Record<string, 1 | 2> = {
   PERSON_NAME: 1, WORKPLACE_SCHOOL: 1, FIN_INSTITUTION: 1, MED_PROVIDER: 1,
-  EMAIL: 2, PHONE: 2, HOME_ADDRESS: 2, DATE_OF_BIRTH: 2, INCOME: 2, BALANCE_DEBT: 2,
-  MED_CONDITION: 2, MEDICATION: 2,
-  GOV_ID: 3, CARD_NUMBER: 3, BANK_ACCOUNT: 3, CREDENTIAL: 3, MED_RECORD_ID: 3, SENSITIVE_HEALTH: 3,
+  EMAIL: 1, PHONE: 1, HOME_ADDRESS: 1, DATE_OF_BIRTH: 1, INCOME: 1, BALANCE_DEBT: 1,
+  MED_CONDITION: 1, MEDICATION: 1,
+  GOV_ID: 2, CARD_NUMBER: 2, BANK_ACCOUNT: 2, CREDENTIAL: 2, MED_RECORD_ID: 2, SENSITIVE_HEALTH: 2,
 };
+
+export type Domain = 'medical' | 'financial' | 'personal';
+export const DOMAIN_LABEL: Record<Domain, string> = { medical: 'Medical', financial: 'Finance', personal: 'Personal' };
+export const DOMAIN_ORDER: Domain[] = ['medical', 'financial', 'personal'];
+export const TIER_NAME: Record<1 | 2, string> = { 1: 'somewhat sensitive', 2: 'very sensitive' };
+const CATEGORY_DOMAIN: Record<string, Domain> = {
+  MED_PROVIDER: 'medical', MED_CONDITION: 'medical', MEDICATION: 'medical', MED_RECORD_ID: 'medical', SENSITIVE_HEALTH: 'medical',
+  FIN_INSTITUTION: 'financial', INCOME: 'financial', BALANCE_DEBT: 'financial', CARD_NUMBER: 'financial', BANK_ACCOUNT: 'financial', CREDENTIAL: 'financial',
+};
+/** Type of information. Mirrors finetune/taxonomy.py. Unknown categories count as personal. */
+export function domainOf(s: Span): Domain {
+  return CATEGORY_DOMAIN[categoryOf(s)] ?? 'personal';
+}
 
 /** Category name for logging. Regex spans get the closest fine-grained category. */
 export function categoryOf(s: Span): string {
@@ -98,6 +111,6 @@ export function categoryOf(s: Span): string {
 }
 
 /** Risk tier for logging. Mirrors finetune/taxonomy.py. Unknown categories count as tier 1. */
-export function tierOf(s: Span): 1 | 2 | 3 {
+export function tierOf(s: Span): 1 | 2 {
   return s.tier ?? CATEGORY_TIER[categoryOf(s)] ?? 1;
 }
