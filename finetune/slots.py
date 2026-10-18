@@ -49,13 +49,13 @@ CONDITIONS = [
     "celiac disease", "epilepsy", "Crohn's disease", "polycystic ovary syndrome",
     "sleep apnea", "hypothyroidism", "psoriasis", "lupus", "anemia", "ADHD",
     "chronic back pain", "eczema", "high cholesterol", "ulcerative colitis", "fibromyalgia",
-    "acid reflux", "kidney stones", "a herniated disc", "depression-related insomnia", "tinnitus", "endometrial polyps",
+    "acid reflux", "PCOS", "GERD", "COPD", "POTS", "TMJ disorder", "kidney stones", "a herniated disc", "depression-related insomnia", "tinnitus", "endometrial polyps",
 ]
 SENSITIVE_DX = [
     "HIV", "bipolar disorder", "clinical depression", "PTSD", "opioid use disorder",
     "alcohol use disorder", "schizophrenia", "hepatitis C", "generalized anxiety disorder",
     "an eating disorder", "a BRCA1 mutation", "herpes", "gonorrhea", "panic disorder", "a past abortion", "methamphetamine addiction",
-    "anxiety", "depression", "bulimia", "anorexia", "a stillbirth", "being HIV positive", "social anxiety disorder", "a heroin addiction",
+    "anxiety", "an anxiety disorder", "major depressive disorder", "HIV positive", "HIV-positive status", "binge eating disorder", "cannabis use disorder", "seasonal affective disorder", "depression", "bulimia", "anorexia", "a stillbirth", "being HIV positive", "social anxiety disorder", "a heroin addiction",
 ]
 MEDICATIONS = [
     "metformin 500 mg", "lisinopril", "an albuterol inhaler", "sertraline 50 mg",
@@ -91,11 +91,11 @@ SCHOOLS = [
     "the University of Tennessee", "Pellissippi State", "Georgia Tech", "Ohio State", "Vanderbilt",
     "UNC Chapel Hill", "Oak Ridge National Laboratory", "Clemson", "Purdue", "Rutgers",
 ]
-PLACE_WORDS = ["Lakeview", "Oakwood", "Summit", "Mercy", "Grace", "Covenant", "Providence", "Cedar Valley", "Pinecrest", "Heritage", "Harbor", "Westside"]
+PLACE_WORDS = ["Lakeview", "Oakwood", "Summit", "Mercy", "Grace", "Covenant", "Providence", "Cedar Valley", "Pinecrest", "Heritage", "Harbor", "Westside", "Sunrise", "Valley View", "Lakeshore", "Hillcrest", "Bayview", "Meadowbrook", "Sycamore", "Redwood"]
 PLACE_WORDS_HELD = ["Brookfield", "Ridgeway", "Fairmont", "Maple Grove", "Eastgate", "Willow Creek", "Northshore"]
 SAINTS = ["Luke", "Joseph", "Anne", "Vincent", "Francis", "Elizabeth"]
 SAINTS_HELD = ["Thomas", "Catherine", "Jude", "Agnes"]
-CLINIC_SUFFIX = ["Hospital", "Medical Group", "Family Practice", "Medical Center", "Family Clinic", "Urgent Care", "Health Partners", "General Hospital", "Women's Health Center", "Cardiology Associates", "Pediatrics"]
+CLINIC_SUFFIX = ["Hospital", "Medical Group", "Family Practice", "Medical Center", "Family Clinic", "Urgent Care", "Health Partners", "General Hospital", "Women's Health Center", "Cardiology Associates", "Pediatrics", "Family Health Clinic", "Walk-In Clinic", "Internal Medicine", "Pediatric Clinic"]
 HISTORICAL = ["Napoleon Bonaparte", "Marie Curie", "Abraham Lincoln", "Ada Lovelace", "Nelson Mandela", "Albert Einstein", "Frida Kahlo", "Alan Turing"]
 BOOKS = ["Pride and Prejudice", "The Great Gatsby", "1984", "To Kill a Mockingbird", "Dune", "Frankenstein", "The Hobbit"]
 COUNTRIES = ["Portugal", "Kenya", "Peru", "Vietnam", "Norway", "Chile", "Japan", "Morocco"]
@@ -218,7 +218,9 @@ class Filler:
 
     # medical
     def g_condition(self):
-        return self.r.choice(CONDITIONS_HELD if self.holdout else CONDITIONS)
+        value = self.r.choice(CONDITIONS_HELD if self.holdout else CONDITIONS)
+        # people often type in lowercase, so the model must not depend on capitalization
+        return value.lower() if self.r.random() < 0.12 else value
 
     def g_sensitive_dx(self):
         return self.r.choice(SENSITIVE_DX_HELD if self.holdout else SENSITIVE_DX)
@@ -237,6 +239,10 @@ class Filler:
         suffixes = CLINIC_SUFFIX_HELD if self.holdout else CLINIC_SUFFIX
         words = PLACE_WORDS_HELD if self.holdout else PLACE_WORDS
         saints = SAINTS_HELD if self.holdout else SAINTS
+        value = self._provider_value(suffixes, words, saints)
+        return value.lower() if self.r.random() < 0.12 else value
+
+    def _provider_value(self, suffixes, words, saints):
         roll = self.r.random()
         if roll < 0.25:
             return f"Dr. {self.fake.last_name()}"

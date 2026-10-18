@@ -51,5 +51,6 @@ POLICY = [
     "Do not flag general questions about a topic (e.g. 'what is diabetes').",
     "Do not flag public figures, fictional characters, or example formats such as XXX-XX-XXXX.",
     "Vague symptoms with no named condition (e.g. 'I feel tired') are not flagged.",
+    "Injuries (a torn ligament, a broken bone) and a medical device named on its own (an inhaler) are not flagged.",
     "Copy each finding exactly as written in the message.",
 ]
