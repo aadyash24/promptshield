@@ -1,0 +1,4 @@
+{"id": "hand-008", "prompt": "My insurance denied my son's ADHD treatment. Help me write an appeal. His name is Daniel Okafor, DOB 06/14/2015.", "missed": [["adhd", "MED_CONDITION"]], "extra": []}
+{"id": "hand-014", "prompt": "I've been on sertraline 100mg for 2 years for anxiety and I want to taper off. Is that safe?", "missed": [["anxiety", "SENSITIVE_HEALTH"]], "extra": [["anxiety", "MED_CONDITION"]]}
+{"id": "hand-046", "prompt": "Dr. Patel at Knoxville Orthopedic Clinic wants surgery for my torn acl, how should i get a second opinion", "missed": [], "extra": [["torn acl", "MED_CONDITION"]]}
+{"id": "hand-047", "prompt": "since the miscarriage in march i havent been sleeping, what should i tell my therapist", "missed": [["miscarriage", "SENSITIVE_HEALTH"]], "extra": [["the miscarriage", "SENSITIVE_HEALTH"]]}
