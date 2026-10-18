@@ -135,3 +135,9 @@ Information is grouped by type (medical, finance, personal). Within each type th
 somewhat sensitive and very sensitive. The submitted proposal describes three tiers (high, medium, low), so the
 final report should state that we simplified to two. Results saved before this change in `finetune/results/`
 used the old three tiers and are not comparable on the tier metrics. Retrain on merge day with the new labels.
+
+## Decision: DistilBERT detects, Qwen3 rewrites (Oct 18)
+- **Detection and categorization:** the fine-tuned DistilBERT token classifier, served by `finetune/serve.py --token-model <dir>`. The extension checks after a 60 ms pause. Regex runs instantly and DistilBERT adds context-based findings. Stale checks are cancelled so slow replies never queue up.
+- **Rewriting:** Qwen3 (1.7B, 4-bit, run in the browser with WebLLM) smooths the wording of a prompt whose sensitive parts were already replaced with placeholders. The rewrite is rescanned and replaced with the plain placeholder text if anything leaks. To try the smaller model, change `MODEL_ID` in `entrypoints/offscreen/main.ts`.
+- **Qwen3 as a detector:** the LoRA-tuned Qwen3-0.6B detector stays in the repo as the comparison for the report. On the handwritten medical set it was more precise than DistilBERT but about 6 times slower.
+- **Merge day:** only DistilBERT needs retraining on the merged data (about one minute on Colab).

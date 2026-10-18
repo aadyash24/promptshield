@@ -10,7 +10,7 @@ import type {
 import { categoryOf, tierOf, type Span } from '../lib/types';
 import { WarningUI } from '../lib/ui';
 
-const DEBOUNCE_MS = 300;
+const DEBOUNCE_MS = 60;
 const MIN_CHARS = 4;
 
 export default defineContentScript({

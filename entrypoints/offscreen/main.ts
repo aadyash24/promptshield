@@ -2,8 +2,9 @@ import { CreateMLCEngine, type MLCEngine } from '@mlc-ai/web-llm';
 import { REWRITE_SYSTEM_PROMPT } from '../../lib/rewrite';
 import type { OffscreenRequest, OffscreenResponse } from '../../lib/messages';
 
-// Change this one line after the Oct 13 bake-off if Qwen wins.
-const MODEL_ID = 'Llama-3.2-1B-Instruct-q4f16_1-MLC';
+// Qwen3 rewrites the prompt. DistilBERT (the local server) does the detecting.
+// To try the smaller, faster model, change this one line to 'Qwen3-0.6B-q4f16_1-MLC'.
+const MODEL_ID = 'Qwen3-1.7B-q4f16_1-MLC';
 
 let engine: Promise<MLCEngine> | null = null;
 
@@ -26,6 +27,8 @@ async function rewrite(masked: string): Promise<string> {
     ],
     temperature: 0.2,
     max_tokens: 400,
+    // Qwen3 "thinks" out loud by default. Turn that off so the reply is only the rewritten message.
+    extra_body: { enable_thinking: false },
   });
   return reply.choices[0]?.message?.content ?? '';
 }

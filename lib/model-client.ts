@@ -43,8 +43,18 @@ export function findingsToSpans(prompt: string, findings: Finding[]): Span[] {
   return spans;
 }
 
-export async function detectViaServer(text: string, timeoutMs = 20000): Promise<Span[]> {
+let latestCheck: AbortController | null = null;
+
+/**
+ * Ask the local server for findings. With supersede, a newer live check cancels the one still
+ * running, so checking every 60 ms never builds a queue of stale requests.
+ */
+export async function detectViaServer(text: string, timeoutMs = 20000, supersede = false): Promise<Span[]> {
   const ctl = new AbortController();
+  if (supersede) {
+    latestCheck?.abort();
+    latestCheck = ctl;
+  }
   const timer = setTimeout(() => ctl.abort(), timeoutMs);
   try {
     const res = await fetch(`${SERVER}/detect`, {
@@ -60,5 +70,6 @@ export async function detectViaServer(text: string, timeoutMs = 20000): Promise<
     return []; // server not running: regex layer still works
   } finally {
     clearTimeout(timer);
+    if (latestCheck === ctl) latestCheck = null;
   }
 }

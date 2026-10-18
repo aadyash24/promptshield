@@ -27,7 +27,7 @@ paints highlights         creates offscreen page
 shows warning card
 ```
 
-1. The content script reads the text box on a 300 ms debounce and asks the service worker to analyze it.
+1. The content script reads the text box on a 60 ms debounce and asks the service worker to analyze it.
 2. The regex detector answers instantly (emails, phones, SSNs, Luhn-checked cards, API keys, high-entropy tokens). The slower contextual detector (GLiNER) updates the page if it finds more.
 3. Detections are painted with the CSS Custom Highlight API, so the page's editor DOM is never modified.
 4. "Use safer version" swaps each detection for a placeholder like `[EMAIL_1]`, asks the local model to smooth the wording, then re-scans the result. If anything sensitive survives, it falls back to the plain placeholder text (`lib/rewrite.ts`). A small model can never leak a detail.
