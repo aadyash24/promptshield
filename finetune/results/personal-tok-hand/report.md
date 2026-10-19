@@ -18,4 +18,4 @@ False alarm rate on clean prompts: 0.174 (46 clean, 23 sensitive). Tier accuracy
 | PHONE | 5 | 0.625 | 1.000 | 0.769 |
 | WORKPLACE_SCHOOL | 7 | 0.417 | 0.714 | 0.526 |
 
-Valid output: 1.000. Time: 0.113 s per prompt.
+Valid output: 1.000. Time: 0.109 s per prompt.
