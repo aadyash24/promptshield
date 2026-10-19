@@ -1,0 +1,9 @@
+{"id": "hand-012", "prompt": "How do I stop my AWS key from being leaked? Mine is AKIAIOSFODNN7EXAMPLE and I pushed it to GitHub by accident.", "missed": [["akiaiosfodnn7example", "CREDENTIAL"]], "extra": [["g", "FIN_INSTITUTION"], ["iaiosfodnn7example", "CREDENTIAL"], ["ithub", "CREDENTIAL"]]}
+{"id": "hand-016", "prompt": "Hi, this is Jordan Blake from Acme Logistics. Can you draft a reply to a customer asking for a refund?", "missed": [], "extra": [["acme logistics", "FIN_INSTITUTION"]]}
+{"id": "hand-030", "prompt": "Compare Chase and Bank of America credit cards for travel rewards.", "missed": [], "extra": [["bank of america", "FIN_INSTITUTION"], ["chase and", "FIN_INSTITUTION"]]}
+{"id": "hand-035", "prompt": "What does a typical SSN look like? I know it's XXX-XX-XXXX but I'm writing a form validator.", "missed": [], "extra": [["xxx-xx-xxxx", "CREDENTIAL"]]}
+{"id": "hand-062", "prompt": "I just got a bonus of $4,500 on top of my usual paycheck. Should I put all of it into my emergency fund?", "missed": [["$4,500", "INCOME"]], "extra": [["$4,500", "BALANCE_DEBT"]]}
+{"id": "hand-063", "prompt": "The IBAN on the wire instructions is DE89370400440532013000. Is it normal for a vendor to ask for that over email?", "missed": [["de89370400440532013000", "BANK_ACCOUNT"]], "extra": []}
+{"id": "hand-064", "prompt": "My statement says I'm overdrawn by $72.18. Will that hit my credit score?", "missed": [["$72.18", "BALANCE_DEBT"]], "extra": [["$", "BALANCE_DEBT"]]}
+{"id": "hand-066", "prompt": "My rent is $1,850 a month and I'm trying to figure out if that's too much relative to my income.", "missed": [], "extra": [["$1,850 a month", "INCOME"]]}
+{"id": "hand-067", "prompt": "I use Wells Fargo for my mortgage and Chase for everyday spending. Is it smart to split banks like that?", "missed": [["chase", "FIN_INSTITUTION"]], "extra": []}
