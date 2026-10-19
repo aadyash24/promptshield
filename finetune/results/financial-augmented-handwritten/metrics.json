@@ -1,0 +1,96 @@
+{
+  "strict": {
+    "precision": 0.6154,
+    "recall": 0.7619,
+    "f1": 0.6809,
+    "tp": 16,
+    "fp": 10,
+    "fn": 5
+  },
+  "text_only": {
+    "precision": 0.6538,
+    "recall": 0.8095,
+    "f1": 0.7234,
+    "tp": 17,
+    "fp": 9,
+    "fn": 4
+  },
+  "tier_accuracy": 1.0,
+  "per_tier_recall": {
+    "1": 0.75,
+    "2": 0.75,
+    "3": 0.7778
+  },
+  "per_category": {
+    "BALANCE_DEBT": {
+      "precision": 0.6,
+      "recall": 0.75,
+      "f1": 0.6667,
+      "tp": 3,
+      "fp": 2,
+      "fn": 1,
+      "support": 4
+    },
+    "BANK_ACCOUNT": {
+      "precision": 1.0,
+      "recall": 0.5,
+      "f1": 0.6667,
+      "tp": 1,
+      "fp": 0,
+      "fn": 1,
+      "support": 2
+    },
+    "CARD_NUMBER": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "support": 3
+    },
+    "CREDENTIAL": {
+      "precision": 0.5,
+      "recall": 0.75,
+      "f1": 0.6,
+      "tp": 3,
+      "fp": 3,
+      "fn": 1,
+      "support": 4
+    },
+    "FIN_INSTITUTION": {
+      "precision": 0.4286,
+      "recall": 0.75,
+      "f1": 0.5455,
+      "tp": 3,
+      "fp": 4,
+      "fn": 1,
+      "support": 4
+    },
+    "INCOME": {
+      "precision": 0.75,
+      "recall": 0.75,
+      "f1": 0.75,
+      "tp": 3,
+      "fp": 1,
+      "fn": 1,
+      "support": 4
+    }
+  },
+  "prompt_level": {
+    "precision": 0.8182,
+    "recall": 0.9474,
+    "f1": 0.878,
+    "tp": 18,
+    "fp": 4,
+    "fn": 1,
+    "positive_prompts": 19,
+    "negative_prompts": 50,
+    "false_alarm_rate": 0.08
+  },
+  "hallucination_rate": 0.0,
+  "n_prompts": 69,
+  "valid_json_rate": 1.0,
+  "seconds": 6.3,
+  "seconds_per_prompt": 0.091
+}
