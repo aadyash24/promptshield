@@ -1,0 +1,105 @@
+{
+  "strict": {
+    "precision": 0.6909,
+    "recall": 0.8444,
+    "f1": 0.76,
+    "tp": 38,
+    "fp": 17,
+    "fn": 7
+  },
+  "text_only": {
+    "precision": 0.7091,
+    "recall": 0.8667,
+    "f1": 0.78,
+    "tp": 39,
+    "fp": 16,
+    "fn": 6
+  },
+  "tier_accuracy": 0.9744,
+  "per_tier_recall": {
+    "1": 0.8636,
+    "2": 0.9444,
+    "3": 0.4
+  },
+  "per_category": {
+    "DATE_OF_BIRTH": {
+      "precision": 0.8333,
+      "recall": 1.0,
+      "f1": 0.9091,
+      "tp": 5,
+      "fp": 1,
+      "fn": 0,
+      "support": 5
+    },
+    "EMAIL": {
+      "precision": 0.5,
+      "recall": 0.75,
+      "f1": 0.6,
+      "tp": 3,
+      "fp": 3,
+      "fn": 1,
+      "support": 4
+    },
+    "GOV_ID": {
+      "precision": 0.3333,
+      "recall": 0.4,
+      "f1": 0.3636,
+      "tp": 2,
+      "fp": 4,
+      "fn": 3,
+      "support": 5
+    },
+    "HOME_ADDRESS": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "support": 4
+    },
+    "PERSON_NAME": {
+      "precision": 0.7222,
+      "recall": 0.8667,
+      "f1": 0.7879,
+      "tp": 13,
+      "fp": 5,
+      "fn": 2,
+      "support": 15
+    },
+    "PHONE": {
+      "precision": 0.625,
+      "recall": 1.0,
+      "f1": 0.7692,
+      "tp": 5,
+      "fp": 3,
+      "fn": 0,
+      "support": 5
+    },
+    "WORKPLACE_SCHOOL": {
+      "precision": 0.8571,
+      "recall": 0.8571,
+      "f1": 0.8571,
+      "tp": 6,
+      "fp": 1,
+      "fn": 1,
+      "support": 7
+    }
+  },
+  "prompt_level": {
+    "precision": 0.7333,
+    "recall": 0.9565,
+    "f1": 0.8302,
+    "tp": 22,
+    "fp": 8,
+    "fn": 1,
+    "positive_prompts": 23,
+    "negative_prompts": 61,
+    "false_alarm_rate": 0.1311
+  },
+  "hallucination_rate": 0.0,
+  "n_prompts": 84,
+  "valid_json_rate": 1.0,
+  "seconds": 4.0,
+  "seconds_per_prompt": 0.048
+}
