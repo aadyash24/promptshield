@@ -41,6 +41,18 @@ describe('findingsToSpans', () => {
   });
 });
 
+describe('placeholders from a safer rewrite', () => {
+  it('are never reported as sensitive, even if the model flags them', () => {
+    const text = 'Hi, I am [PERSON_1] and I take [MEDICATION_1]. Mail me at jo@example.com';
+    const spans = findingsToSpans(text, [
+      { text: 'PERSON_1', category: 'PERSON_NAME', tier: 1 },
+      { text: '[MEDICATION_1]', category: 'MEDICATION', tier: 2 },
+      { text: 'MEDICATION_1', category: 'EMAIL', tier: 2 },
+    ]);
+    expect(spans).toHaveLength(0);
+  });
+});
+
 describe('logging helpers for regex spans', () => {
   it('maps regex types to categories and tiers', () => {
     const [ssn] = detectRegex('my ssn is 527-61-3849');

@@ -15,6 +15,10 @@ export interface Finding {
  */
 export function findingsToSpans(prompt: string, findings: Finding[]): Span[] {
   const spans: Span[] = [];
+  // Placeholders from an earlier safer rewrite, such as [EMAIL_1], are not sensitive. The model can
+  // mistake them for names or medications, so any span touching one is dropped.
+  const placeholders = [...prompt.matchAll(/\[[A-Z][A-Z_]*_\d+\]/g)].map((m) => [m.index ?? 0, (m.index ?? 0) + m[0].length]);
+  const touchesPlaceholder = (a: number, b: number) => placeholders.some(([ps, pe]) => a < (pe ?? 0) && b > (ps ?? 0));
   const seen = new Set<string>();
   for (const f of findings) {
     if (!f || typeof f.text !== 'string' || f.text.length < 2) continue;
@@ -25,7 +29,7 @@ export function findingsToSpans(prompt: string, findings: Finding[]): Span[] {
       const at = prompt.indexOf(f.text, from);
       if (at < 0) break;
       const key = `${at}:${at + f.text.length}`;
-      if (!seen.has(key)) {
+      if (!seen.has(key) && !touchesPlaceholder(at, at + f.text.length)) {
         seen.add(key);
         spans.push({
           start: at,
@@ -43,8 +47,18 @@ export function findingsToSpans(prompt: string, findings: Finding[]): Span[] {
   return spans;
 }
 
-export async function detectViaServer(text: string, timeoutMs = 20000): Promise<Span[]> {
+let latestCheck: AbortController | null = null;
+
+/**
+ * Ask the local server for findings. With supersede, a newer live check cancels the one still
+ * running, so checking every 60 ms never builds a queue of stale requests.
+ */
+export async function detectViaServer(text: string, timeoutMs = 20000, supersede = false): Promise<Span[]> {
   const ctl = new AbortController();
+  if (supersede) {
+    latestCheck?.abort();
+    latestCheck = ctl;
+  }
   const timer = setTimeout(() => ctl.abort(), timeoutMs);
   try {
     const res = await fetch(`${SERVER}/detect`, {
@@ -60,5 +74,6 @@ export async function detectViaServer(text: string, timeoutMs = 20000): Promise<
     return []; // server not running: regex layer still works
   } finally {
     clearTimeout(timer);
+    if (latestCheck === ctl) latestCheck = null;
   }
 }

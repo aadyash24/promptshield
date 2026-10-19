@@ -1,0 +1,7 @@
+{"id": "hand-008", "prompt": "My insurance denied my son's ADHD treatment. Help me write an appeal. His name is Daniel Okafor, DOB 06/14/2015.", "missed": [["adhd", "MED_CONDITION"]], "extra": []}
+{"id": "hand-014", "prompt": "I've been on sertraline 100mg for 2 years for anxiety and I want to taper off. Is that safe?", "missed": [["anxiety", "SENSITIVE_HEALTH"]], "extra": [["anxiety", "MED_CONDITION"]]}
+{"id": "hand-026", "prompt": "I got my results back and I'm HIV positive. I don't know who to tell first.", "missed": [["hiv positive", "SENSITIVE_HEALTH"]], "extra": [["hiv", "SENSITIVE_HEALTH"]]}
+{"id": "hand-039", "prompt": "my doc at Riverside Family Clinic says i have asthma, what inhaler questions should i ask her", "missed": [["riverside family clinic", "MED_PROVIDER"]], "extra": [["inhaler", "MEDICATION"]]}
+{"id": "hand-046", "prompt": "Dr. Patel at Knoxville Orthopedic Clinic wants surgery for my torn acl, how should i get a second opinion", "missed": [], "extra": [["acl", "MED_CONDITION"]]}
+{"id": "hand-047", "prompt": "since the miscarriage in march i havent been sleeping, what should i tell my therapist", "missed": [["miscarriage", "SENSITIVE_HEALTH"]], "extra": []}
+{"id": "hand-052", "prompt": "my medical record number should be on the top of the bill right? where is it usually printed", "missed": [], "extra": [["...", "MED_RECORD_ID"]]}

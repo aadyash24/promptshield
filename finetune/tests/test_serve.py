@@ -69,6 +69,8 @@ def test_http_endpoints(tmp_path):
         assert "527-61" not in written and written.count("\n") == 1
         page = urllib.request.urlopen(base + "/mock/").read().decode()
         assert "ChatAssist" in page
+        demo = urllib.request.urlopen(base + "/demo").read().decode()
+        assert "Follow one prompt through the detector" in demo
         assert urllib.request.urlopen(base + "/health").status == 200
         try:
             urllib.request.urlopen(base + "/mock/../../finetune/serve.py")

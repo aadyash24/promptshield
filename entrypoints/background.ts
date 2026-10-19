@@ -44,7 +44,7 @@ export default defineBackground(() => {
       // Phase 2: contextual detector. Updates the page later if it finds more.
       const tabId = sender.tab?.id;
       if (tabId !== undefined) {
-        void detectViaServer(msg.text).then((modelSpans) => {
+        void detectViaServer(msg.text, 20000, true).then((modelSpans) => {
           if (!modelSpans.length) return;
           const merged = mergeSpans([...regexSpans, ...modelSpans]);
           const update: SpansUpdate = { type: 'spans', id: msg.id, spans: merged };

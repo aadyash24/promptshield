@@ -1,11 +1,9 @@
-"""Single source of truth for categories and risk tiers.
+"""Single source of truth for categories, domains and risk tiers.
 
-ASSUMPTION: these tier assignments are OUR PROPOSAL, not copied from the project
-proposal. If the proposal defines the three risk tiers differently, edit CATEGORIES
-below (name, domain, tier), then re-run make_dataset.py. Nothing else needs to change.
-
-Tier 1 = low, 2 = medium, 3 = high. Domains match the timeline: personal identifiers,
-financial, medical.
+Structure: every finding has a TYPE OF INFO (domain: medical | financial | personal) and one of
+three risk tiers: 1 = low, 2 = medium, 3 = high. Findings are shown grouped by type, with the
+tier of each item inside its type. To change an assignment, edit CATEGORIES below
+(name, domain, tier), then re-run make_dataset.py. Nothing else needs to change.
 """
 from dataclasses import dataclass
 
@@ -44,6 +42,8 @@ CATEGORIES = [
 
 BY_NAME = {c.name: c for c in CATEGORIES}
 TIER_LABEL = {1: "low", 2: "medium", 3: "high"}
+DOMAINS = ("medical", "financial", "personal")
+DOMAIN_LABEL = {"medical": "Medical", "financial": "Finance", "personal": "Personal"}
 
 # Annotation policy, shared by the generator and the handwritten test set.
 POLICY = [
@@ -51,5 +51,6 @@ POLICY = [
     "Do not flag general questions about a topic (e.g. 'what is diabetes').",
     "Do not flag public figures, fictional characters, or example formats such as XXX-XX-XXXX.",
     "Vague symptoms with no named condition (e.g. 'I feel tired') are not flagged.",
+    "Injuries (a torn ligament, a broken bone) and a medical device named on its own (an inhaler) are not flagged.",
     "Copy each finding exactly as written in the message.",
 ]

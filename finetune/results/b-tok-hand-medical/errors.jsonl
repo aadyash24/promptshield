@@ -1,0 +1,10 @@
+{"id": "hand-000", "prompt": "hey so i just found out i have celiac disease and my doc at Riverside Family Clinic wants me to go gluten free, any meal prep ideas for a broke college student?", "missed": [], "extra": [["gluten", "MEDICATION"]]}
+{"id": "hand-002", "prompt": "I'm applying for a mortgage and my lender asked for my SSN, 512-48-9034. Is it normal to email it?", "missed": [], "extra": [["a", "SENSITIVE_HEALTH"]]}
+{"id": "hand-008", "prompt": "My insurance denied my son's ADHD treatment. Help me write an appeal. His name is Daniel Okafor, DOB 06/14/2015.", "missed": [], "extra": [["treatment", "SENSITIVE_HEALTH"]]}
+{"id": "hand-014", "prompt": "I've been on sertraline 100mg for 2 years for anxiety and I want to taper off. Is that safe?", "missed": [["anxiety", "SENSITIVE_HEALTH"]], "extra": [["anxiety", "MED_CONDITION"]]}
+{"id": "hand-017", "prompt": "My Visa 4539 1488 0343 6467 got declined at the gas station but I have money in my account. Why would that happen?", "missed": [], "extra": [["4539", "MED_RECORD_ID"], ["station", "MED_PROVIDER"], ["the", "MED_PROVIDER"]]}
+{"id": "hand-023", "prompt": "How do I request my medical records from a hospital? I'm patient 7745521 at Saint Mary's.", "missed": [["saint mary's", "MED_PROVIDER"]], "extra": [["saint mary'", "MED_PROVIDER"]]}
+{"id": "hand-029", "prompt": "I took a screenshot of my passport, number X12345678, and now I'm worried. What should I do?", "missed": [], "extra": [["x12345678", "MED_RECORD_ID"]]}
+{"id": "hand-045", "prompt": "my dad takes warfarin and lisinopril, can he have grapefruit", "missed": [], "extra": [["grapefruit", "MEDICATION"]]}
+{"id": "hand-046", "prompt": "Dr. Patel at Knoxville Orthopedic Clinic wants surgery for my torn acl, how should i get a second opinion", "missed": [], "extra": [["torn acl", "MED_CONDITION"]]}
+{"id": "hand-047", "prompt": "since the miscarriage in march i havent been sleeping, what should i tell my therapist", "missed": [["miscarriage", "SENSITIVE_HEALTH"]], "extra": []}

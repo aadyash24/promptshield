@@ -14,6 +14,9 @@ DATA = Path(__file__).resolve().parent.parent / "data"
 
 
 def rows(name, n=400):
+    if name == "handwritten":  # built on the fly: the generated file is not committed
+        from handwritten import build
+        return build()[:n]
     out = []
     for line in open(DATA / f"{name}.jsonl", encoding="utf-8"):
         out.append(json.loads(line))
@@ -89,3 +92,17 @@ def test_chunking_keeps_all_text_and_overlaps():
     for (a, ta), (b, _) in zip(parts, parts[1:]):
         assert b < a + len(ta)  # windows overlap, so a span on a boundary is seen whole
     assert chunk_text("short") == [(0, "short")]
+
+
+def test_decode_snaps_partial_words_to_whole_words():
+    prompt = "my doc is Dr. Patel and my mrn is 4471823 and I avoid gluten"
+    def span(text, part):
+        start = prompt.index(text) + prompt[prompt.index(text):].index(part)
+        return start
+    def run(part_text, label):
+        s = prompt.index(part_text)
+        offsets = [(s, s + len(part_text))]
+        return decode(prompt, offsets, [LABELS.index(label)])
+    assert run("44", "B-MED_RECORD_ID")[0]["text"] == "4471823"
+    assert run("luten", "B-MEDICATION")[0]["text"] == "gluten"
+    assert run(". Patel", "B-MED_PROVIDER")[0]["text"] == "Dr. Patel"

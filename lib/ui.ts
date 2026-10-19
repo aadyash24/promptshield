@@ -1,4 +1,4 @@
-import { CATEGORY_LABEL, TYPE_LABEL, type Span } from './types';
+import { CATEGORY_LABEL, DOMAIN_LABEL, DOMAIN_ORDER, TIER_NAME, TYPE_LABEL, domainOf, tierOf, type Domain, type Span } from './types';
 
 const HIGHLIGHT_NAME = 'privacy-warning';
 
@@ -133,15 +133,22 @@ export class WarningUI {
 
   showFound(anchor: HTMLElement, spans: Span[]): void {
     const card = this.ensureCard(anchor);
-    const counts = new Map<string, number>();
+    // Group by type of info first, then show the tier of each item inside its type.
+    const groups = new Map<Domain, Map<string, number>>();
     for (const s of spans) {
-      const label = (s.category && CATEGORY_LABEL[s.category]) || TYPE_LABEL[s.type];
-      counts.set(label, (counts.get(label) ?? 0) + 1);
+      const label = `${(s.category && CATEGORY_LABEL[s.category]) || TYPE_LABEL[s.type]} (${TIER_NAME[tierOf(s)]})`;
+      const g = groups.get(domainOf(s)) ?? new Map<string, number>();
+      g.set(label, (g.get(label) ?? 0) + 1);
+      groups.set(domainOf(s), g);
     }
 
-    const list = el('ul');
-    for (const [label, n] of counts) {
-      list.append(el('li', { text: n > 1 ? `${label} (${n})` : label }));
+    const list = el('div');
+    for (const d of DOMAIN_ORDER) {
+      const g = groups.get(d);
+      if (!g) continue;
+      const ul = el('ul');
+      for (const [label, n] of g) ul.append(el('li', { text: n > 1 ? `${label} x${n}` : label }));
+      list.append(el('h2', { text: DOMAIN_LABEL[d] }), ul);
     }
     const rewrite = el('button', { text: 'Use safer version' });
     rewrite.addEventListener('click', () => this.actions.onRewrite());

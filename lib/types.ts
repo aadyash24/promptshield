@@ -17,7 +17,7 @@ export interface Span {
   source: 'regex' | 'gliner' | 'model';
   /** Fine-grained category from the fine-tuned detector, e.g. GOV_ID. */
   category?: string;
-  /** Risk tier from the fine-tuned detector. 3 is the most harmful to leak. */
+  /** Risk tier from the fine-tuned detector: 1 low, 2 medium, 3 high. */
   tier?: 1 | 2 | 3;
 }
 
@@ -91,6 +91,19 @@ const CATEGORY_TIER: Record<string, 1 | 2 | 3> = {
   MED_CONDITION: 2, MEDICATION: 2,
   GOV_ID: 3, CARD_NUMBER: 3, BANK_ACCOUNT: 3, CREDENTIAL: 3, MED_RECORD_ID: 3, SENSITIVE_HEALTH: 3,
 };
+
+export type Domain = 'medical' | 'financial' | 'personal';
+export const DOMAIN_LABEL: Record<Domain, string> = { medical: 'Medical', financial: 'Finance', personal: 'Personal' };
+export const DOMAIN_ORDER: Domain[] = ['medical', 'financial', 'personal'];
+export const TIER_NAME: Record<1 | 2 | 3, string> = { 1: 'low risk', 2: 'medium risk', 3: 'high risk' };
+const CATEGORY_DOMAIN: Record<string, Domain> = {
+  MED_PROVIDER: 'medical', MED_CONDITION: 'medical', MEDICATION: 'medical', MED_RECORD_ID: 'medical', SENSITIVE_HEALTH: 'medical',
+  FIN_INSTITUTION: 'financial', INCOME: 'financial', BALANCE_DEBT: 'financial', CARD_NUMBER: 'financial', BANK_ACCOUNT: 'financial', CREDENTIAL: 'financial',
+};
+/** Type of information. Mirrors finetune/taxonomy.py. Unknown categories count as personal. */
+export function domainOf(s: Span): Domain {
+  return CATEGORY_DOMAIN[categoryOf(s)] ?? 'personal';
+}
 
 /** Category name for logging. Regex spans get the closest fine-grained category. */
 export function categoryOf(s: Span): string {
