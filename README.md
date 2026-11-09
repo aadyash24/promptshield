@@ -78,3 +78,35 @@ open http://127.0.0.1:8765/assign?pid=P01       # balanced active/silent, hidden
 python study/e2e/run.py                         # browser test of the whole flow (needs Playwright)
 ```
 Logs land in `finetune/study_logs/` (gitignored). `python analyze_logs.py` summarizes them. The session script, consent draft, personas and survey are in the team's Study Kit doc.
+
+## Desktop study app
+
+Install the desktop dependencies with `python -m pip install -r requirements.txt`.
+Start the PromptShield detector and a local chat runtime in separate terminals.
+
+```powershell
+python finetune/serve.py --token-model finetune/out/YOUR_CHECKPOINT
+```
+
+Use `--regex-only` in place of `--token-model ...` for a plumbing check. Confirm the
+detector's `/health` mode before collecting sessions. Set `PROMPTSHIELD_DETECTOR_URL`
+before launching the app to change the detector's base URL. Draft and sent-message
+checks both use its `/detect` endpoint.
+
+Install [Ollama for Windows](https://docs.ollama.com/windows) and pull the default chat model.
+
+```powershell
+ollama pull qwen2.5:3b
+python study_app/study_main.py
+```
+
+The app expects a running chat runtime at `http://127.0.0.1:11434/v1/chat/completions`.
+`PROMPTSHIELD_CHAT_URL` can point to another loopback chat-completions endpoint, and
+`PROMPTSHIELD_CHAT_MODEL` selects its model. Use the same settings in both study conditions.
+Before a pilot, warm up the selected model with a synthetic prompt and check the reply latency.
+
+`python study_app/inspect_sessions.py` opens the desktop logs. Each `message_sent` is
+linked by `message_id` to a `message_detection_completed` event. An `ok` result records
+the detector mode, whether it flagged PII, finding count, categories, and maximum tier.
+`failed` and `interrupted` results have an unknown disclosure outcome. Chat and detector
+text are kept out of the study logs.

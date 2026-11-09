@@ -13,6 +13,7 @@ def main():
     app.styleHints().setColorScheme(Qt.ColorScheme.Light)
 
     window = MainWindow()
+    app.aboutToQuit.connect(window.chat_panel.shutdown)
     window.show()
 
     sys.exit(app.exec())

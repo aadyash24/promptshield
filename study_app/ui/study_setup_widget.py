@@ -65,6 +65,7 @@ class StudySetupWidget(QWidget):
         self.condition_combo = QComboBox()
         self.condition_combo.addItem("Active — show privacy feedback", "active")
         self.condition_combo.addItem("Silent — detection without feedback", "silent")
+        self.condition_combo.addItem("Development — warnings enabled, no logging", "dev")
         layout.addWidget(label)
         layout.addWidget(self.condition_combo)
 
@@ -108,7 +109,16 @@ class StudySetupWidget(QWidget):
             ("What you will do", "You will use an AI assistant and a document editor to write a letter for a fictional character. You may review the character's provided case materials and decide which details to use."),
             ("Privacy feedback", "The application may examine text as you type to identify potentially sensitive information. Some participants may see visual privacy guidance, and others may not. This does not prevent you from completing the task."),
             ("Information used", "The case details are fictional. Do not enter your own real personal, medical, or financial information, or information about other real people."),
-            ("Data handling", "The research team may record task interactions, detection events, AI messages, and the completed letter for study analysis. Ask the researcher about the actual logging configuration, storage, access, retention, and any external AI service before consenting."),
+            (
+                "Data handling",
+                "The study application records interaction timestamps, "
+                "privacy detection categories and severity levels, "
+                "warning interactions, and task completion information. "
+                "The research event logger is designed not to store the "
+                "text you type. Ask the researcher about data storage, "
+                "access, retention, other application components, and "
+                "any external AI service before consenting."
+            ),
             ("Your choice", "Participation is voluntary. You can decline to begin or stop at any time. Ask the researcher about the withdrawal procedure and whether already collected data can be removed."),
         ]
         for name, description in sections:
@@ -143,20 +153,43 @@ class StudySetupWidget(QWidget):
         layout.addLayout(actions)
         return card
 
+
     def _continue_to_consent(self):
+        condition = self.condition_combo.currentData()
+
+        # Development mode skips registration and consent.
+        # It must never create research data.
+        if condition == "dev":
+            self.participant_id = "DEV"
+            self.condition = "dev"
+            self.study_started.emit("DEV", "dev")
+            return
+
         participant_id = self.id_input.text().strip()
-        if not participant_id or not all(ch.isalnum() or ch in '-_' for ch in participant_id):
+
+        if not participant_id or not all(
+            ch.isalnum() or ch in "-_"
+            for ch in participant_id
+        ):
             QMessageBox.warning(
-                self, "Participant ID required",
-                "Enter a non-empty ID using letters, numbers, hyphens, or underscores."
+                self,
+                "Participant ID required",
+                "Enter a non-empty ID using letters, numbers, "
+                "hyphens, or underscores."
             )
             self.id_input.setFocus()
             return
+
         self.participant_id = participant_id
-        self.condition = self.condition_combo.currentData()
-        self.participant_label.setText(f"Participant ID: {participant_id}")
+        self.condition = condition
+
+        self.participant_label.setText(
+            f"Participant ID: {participant_id}"
+        )
+
         self.consent_box.setChecked(False)
         self.pages.setCurrentIndex(1)
+
 
     def _update_begin_button(self):
         self.begin_button.setEnabled(self.consent_box.isChecked())

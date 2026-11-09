@@ -1,3 +1,5 @@
+from collections import deque
+
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -10,10 +12,11 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QApplication,
 )
-from PySide6.QtCore import Qt, Signal, QTimer, QEvent, QThread, QPoint
+from PySide6.QtCore import Qt, Signal, QTimer, QEvent, QThread, QPoint, QElapsedTimer
 from PySide6.QtGui import QFontMetrics, QTextCursor, QTextCharFormat, QColor
 
 from services.promptshield_client import PromptShieldClient
+from services.chat_backend import ChatBackend
 from services.finding_utils import locate_findings
 
 
@@ -120,6 +123,7 @@ class MessageInput(QTextEdit):
     """Chat input with inline privacy highlights and readable hover cards."""
 
     send_requested = Signal()
+    warning_hover_event = Signal(str, object)
 
     SEVERITY_COLORS = {
         1: ("#FEF9C3", "#713F12"),
@@ -131,7 +135,11 @@ class MessageInput(QTextEdit):
         super().__init__(parent)
         self.current_findings = []
         self._hovered_finding_key = None
+        self._hover_details = None
+        self._hover_timer = QElapsedTimer()
+        self._hover_count = 0
         self._privacy_popup = PrivacyWarningPopup(self)
+        self._privacy_popup.installEventFilter(self)
         self.viewport().setMouseTracking(True)
         self.viewport().installEventFilter(self)
 
@@ -147,7 +155,7 @@ class MessageInput(QTextEdit):
             super().keyPressEvent(event)
 
     def highlight_findings(self, spans):
-        self._hide_finding_popup()
+        self.dismiss_warning()
         self.current_findings = []
         selections = []
         message = self.toPlainText()
@@ -181,11 +189,20 @@ class MessageInput(QTextEdit):
     def clear_highlights(self):
         self.current_findings = []
         self.setExtraSelections([])
-        self._hide_finding_popup()
+        self.dismiss_warning()
 
-    def _hide_finding_popup(self):
-        self._hovered_finding_key = None
+    def dismiss_warning(self):
         self._privacy_popup.hide()
+        self._finish_warning_hover()
+
+    def _finish_warning_hover(self):
+        details = self._hover_details
+        self._hover_details = None
+        self._hovered_finding_key = None
+        if details is not None:
+            self.warning_hover_event.emit("warning_hover_ended", {
+                **details, "duration_ms": self._hover_timer.elapsed(),
+            })
 
     def _finding_at_point(self, point):
         """Hit-test actual displayed text cells, avoiding nearest-cursor snapping."""
@@ -218,11 +235,11 @@ class MessageInput(QTextEdit):
         finding, rect = self._finding_at_point(point)
         if finding is None:
             if self._hovered_finding_key is not None:
-                self._hide_finding_popup()
+                self.dismiss_warning()
             return
         key = (finding["qt_start"], finding["qt_end"], finding.get("category"))
         if key != self._hovered_finding_key:
-            self._hovered_finding_key = key
+            self.dismiss_warning()
             # Anchor to highlighted line's top at the first visible character.
             cursor = QTextCursor(self.document())
             cursor.setPosition(finding["qt_start"])
@@ -233,13 +250,29 @@ class MessageInput(QTextEdit):
                 QPoint(first_rect.left(), first_rect.top())
             )
             self._privacy_popup.show_finding(finding, anchor)
+            if not self._privacy_popup.isVisible():
+                return
+            self._hovered_finding_key = key
+            self._hover_count += 1
+            self._hover_details = {
+                "hover_id": self._hover_count,
+                "category": finding.get("category", "SENSITIVE"),
+                "tier": finding["tier"],
+            }
+            self._hover_timer.start()
+            self.warning_hover_event.emit("warning_hovered", self._hover_details.copy())
 
     def eventFilter(self, watched, event):
         if watched is self.viewport():
             if event.type() == QEvent.MouseMove:
                 self._update_hover(event.position().toPoint())
-            elif event.type() in (QEvent.Leave, QEvent.Wheel, QEvent.MouseButtonPress):
-                self._hide_finding_popup()
+            elif event.type() in (
+                QEvent.Leave, QEvent.Wheel, QEvent.MouseButtonPress,
+                QEvent.Hide, QEvent.WindowDeactivate,
+            ):
+                self.dismiss_warning()
+        elif watched is self._privacy_popup and event.type() == QEvent.Hide:
+            self._finish_warning_hover()
         return super().eventFilter(watched, event)
 
 
@@ -248,18 +281,42 @@ class ChatWidget(QWidget):
     insert_requested = Signal(str)
     replace_requested = Signal(str)
     detection_completed = Signal(object)
+    sent_detection_completed = Signal(object)
 
-    def __init__(self, parent=None, study_condition="active"):
+    def __init__(self, parent=None, study_condition="active", task_description=""):
         super().__init__(parent)
         self.setObjectName("chatWidget")
         self.setAttribute(Qt.WA_StyledBackground, True)
         self.message_bubbles = []
         self.study_condition = study_condition
         self.detector = PromptShieldClient()
+        self.chat_backend = ChatBackend(self)
+        self.chat_backend.reply_ready.connect(self.on_chat_reply)
+        self.chat_backend.reply_failed.connect(self.on_chat_error)
+        self._system_message = {
+            "role": "system",
+            "content": (
+                "You are a writing assistant for a fictional role-play exercise. "
+                f"Task: {task_description} "
+                "Help the user draft and revise a concise, professional letter in plain text. "
+                "If the user gives a payment schedule, quote their schedule wording verbatim "
+                "inside the letter. Keep each payment amount paired with its original date. "
+                "Use only facts supplied by the user. Omit any discussion of attachments, "
+                "supporting documents, or receipts unless the user asks for it. "
+                "Use placeholders for missing details. When drafting or revising, "
+                "return the letter directly and apply the requested changes."
+            ),
+        }
+        self._chat_history = []
+        self._awaiting_reply = False
         self._draft_revision = 0
         self._detection_worker = None
+        self._pending_sent_checks = deque()
+        self._sent_check_id = None
+        self._detection_stopped = False
         self._check_queued = False
         self._last_detection_error = None
+        self._last_logged_findings = None
 
         self.setup_ui()
         self.apply_styles()
@@ -351,48 +408,85 @@ class ChatWidget(QWidget):
 
     def on_draft_changed(self):
         self._draft_revision += 1
+        self._check_queued = False
         self.message_input.clear_highlights()
         text = self.message_input.toPlainText()
         if not text.strip():
             self.detection_timer.stop()
-            self._check_queued = False
+            self._last_logged_findings = None
             return
-        self.detection_timer.start()
+        if not self._detection_stopped:
+            self.detection_timer.start()
 
     def run_detection(self):
         text = self.message_input.toPlainText()
-        if not text.strip():
+        if self._detection_stopped or not text.strip():
             return
         if self._detection_worker is not None:
             self._check_queued = True
             return
         self._check_queued = False
+        self.start_detection(text)
+
+    def check_sent_message(self, message_id, text):
+        if self._detection_worker is None:
+            self.start_detection(text, message_id)
+        else:
+            self._pending_sent_checks.append((text, message_id))
+
+    def start_detection(self, text, message_id=None):
         worker = DetectionWorker(self.detector, text, self._draft_revision)
         worker.result_ready.connect(self.on_detection_result)
         worker.error_occurred.connect(self.on_detection_error)
         worker.finished.connect(self.on_detection_finished)
         self._detection_worker = worker
+        self._sent_check_id = message_id
         worker.start()
 
     def on_detection_result(self, revision, result):
+        if self._detection_stopped:
+            return
+        findings = result["findings"]
+        if self._sent_check_id is not None:
+            self.finish_sent_detection(
+                "ok",
+                mode=result.get("mode", "unknown"),
+                contains_pii=bool(findings),
+                finding_count=len(findings),
+                categories=sorted({f.get("category", "SENSITIVE") for f in findings}),
+                max_tier=max((f.get("tier", 1) for f in findings), default=0),
+            )
+            return
         if revision != self._draft_revision:
             return
         text = self.message_input.toPlainText()
-        findings = result.get("findings", [])
         spans = locate_findings(text, findings)
         self._last_detection_error = None
-        self.detection_completed.emit({
-            "revision": revision,
-            "mode": result.get("mode", "unknown"),
-            "finding_count": len(findings),
-            "categories": sorted({f.get("category", "SENSITIVE") for f in findings}),
-        })
+        # Compare finding identities in memory so edits that move the same
+        # text only refresh the highlights. Emit metadata for logging.
+        finding_keys = frozenset(
+            (f.get("text", ""), f.get("category", "SENSITIVE"), f.get("tier", 1))
+            for f in findings
+        )
+        if finding_keys != self._last_logged_findings:
+            self._last_logged_findings = finding_keys
+            self.detection_completed.emit({
+                "revision": revision,
+                "mode": result.get("mode", "unknown"),
+                "finding_count": len(findings),
+                "categories": sorted({f.get("category", "SENSITIVE") for f in findings}),
+            })
         if self.study_condition == "silent":
             self.message_input.clear_highlights()
             return
         self.message_input.highlight_findings(spans)
 
     def on_detection_error(self, revision, error):
+        if self._detection_stopped:
+            return
+        if self._sent_check_id is not None:
+            self.finish_sent_detection("failed")
+            return
         if revision != self._draft_revision:
             return
         self.message_input.clear_highlights()
@@ -400,15 +494,20 @@ class ChatWidget(QWidget):
             print("PromptShield detector unavailable:", error)
             self._last_detection_error = error
 
+    def finish_sent_detection(self, status, **details):
+        message_id = self._sent_check_id
+        self._sent_check_id = None
+        self.sent_detection_completed.emit({"message_id": message_id, "status": status, **details})
+
     def on_detection_finished(self):
         worker = self._detection_worker
         self._detection_worker = None
         if worker is not None:
             worker.deleteLater()
-        if self._check_queued:
-            self._check_queued = False
-            if self.message_input.toPlainText().strip():
-                self.run_detection()
+        if self._pending_sent_checks:
+            self.start_detection(*self._pending_sent_checks.popleft())
+        elif self._check_queued:
+            self.run_detection()
 
     def add_message(self, text, sender="assistant", show_actions=True):
         message_row = QWidget()
@@ -423,6 +522,7 @@ class ChatWidget(QWidget):
         bubble_layout.setContentsMargins(14, 12, 14, 12)
         bubble_layout.setSpacing(10)
         message_label = QLabel(text)
+        message_label.setTextFormat(Qt.PlainText)
         message_label.setObjectName("messageText")
         message_label.setWordWrap(True)
         message_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
@@ -468,19 +568,40 @@ class ChatWidget(QWidget):
 
     def send_message(self):
         text = self.message_input.toPlainText().strip()
-        if not text or self.message_input.isReadOnly():
+        if not text or self.message_input.isReadOnly() or self._awaiting_reply:
             return
         self.add_message(text, sender="user", show_actions=False)
         self.detection_timer.stop()
         self.message_input.clear_highlights()
         self.message_input.clear()
         self.message_submitted.emit(text)
+        self._chat_history.append({"role": "user", "content": text})
+        self.set_awaiting_reply(True)
+        self.chat_backend.request_reply([self._system_message, *self._chat_history])
+
+    def set_awaiting_reply(self, waiting):
+        self._awaiting_reply = waiting
+        self.send_button.setEnabled(not waiting)
+        self.send_button.setText("…" if waiting else "➤")
+
+    def on_chat_reply(self, text):
+        self._chat_history.append({"role": "assistant", "content": text})
+        self.add_message(text)
+        self.set_awaiting_reply(False)
+
+    def on_chat_error(self):
+        self._chat_history.pop()
+        self.add_message("The local assistant could not reply. Please try again.", show_actions=False)
+        self.set_awaiting_reply(False)
 
     def scroll_to_bottom(self):
         scrollbar = self.scroll_area.verticalScrollBar()
         scrollbar.setValue(scrollbar.maximum())
 
     def clear_chat(self):
+        self.chat_backend.cancel()
+        self._chat_history.clear()
+        self.set_awaiting_reply(False)
         self.message_bubbles.clear()
         while self.messages_layout.count():
             item = self.messages_layout.takeAt(0)
@@ -510,11 +631,25 @@ class ChatWidget(QWidget):
         super().resizeEvent(event)
         self.update_bubble_widths()
 
-    def closeEvent(self, event):
+    def stop_detection(self):
+        self._detection_stopped = True
         self.detection_timer.stop()
         self._check_queued = False
+        if self._sent_check_id is not None:
+            self.finish_sent_detection("interrupted")
+        while self._pending_sent_checks:
+            _, message_id = self._pending_sent_checks.popleft()
+            self.sent_detection_completed.emit({"message_id": message_id, "status": "interrupted"})
         if self._detection_worker is not None and self._detection_worker.isRunning():
             self._detection_worker.wait()
+
+    def shutdown(self):
+        self.chat_backend.cancel()
+        self.message_input.dismiss_warning()
+        self.stop_detection()
+
+    def closeEvent(self, event):
+        self.shutdown()
         super().closeEvent(event)
 
     def apply_styles(self):

@@ -22,3 +22,5 @@ study_app/data/*
 
 # Local environment
 .env
+
+study_app/data/

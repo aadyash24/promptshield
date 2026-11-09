@@ -64,7 +64,10 @@ class MainWindow(QMainWindow):
         )
 
         # Right: AI chat
-        self.chat_panel = ChatWidget()
+        task = self.task_manager.current_task
+        self.chat_panel = ChatWidget(
+            task_description=f"{task['title']} for {task['character']['name']}."
+        )
 
         self.chat_panel.insert_requested.connect(
             self.document_panel.insert_text
@@ -93,20 +96,6 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(self.splitter)
 
         
-        # Temporary sample response for testing editor integration
-        self.chat_panel.add_message(
-            "Dear Jordan Ellis,\n\n"
-            "I am writing to request a temporary payment arrangement "
-            "for my November rent. Due to unexpected circumstances, "
-            "I am unable to pay the full amount by the original due date.\n\n"
-            "I would appreciate your consideration of a short-term "
-            "repayment arrangement.\n\n"
-            "Sincerely,\n"
-            "Maya Okafor",
-            sender="assistant"
-        )
-
-
     def show_profile(self):
         self.profile_window.show()
         self.profile_window.raise_()
