@@ -11,3 +11,14 @@ finetune/**/__pycache__/
 .pytest_cache/
 finetune/study_logs/
 finetune/data/handwritten.jsonl
+
+# Python
+__pycache__/
+*.pyc
+
+# Study participant data
+study_app/data/*
+!study_app/data/.gitkeep
+
+# Local environment
+.env
