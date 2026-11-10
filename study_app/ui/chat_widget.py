@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QSizePolicy,
     QApplication,
+    QMessageBox,
 )
 from PySide6.QtCore import Qt, Signal, QTimer, QEvent, QThread, QPoint, QElapsedTimer
 from PySide6.QtGui import QFontMetrics, QTextCursor, QTextCharFormat, QColor
@@ -18,7 +19,7 @@ from PySide6.QtGui import QFontMetrics, QTextCursor, QTextCharFormat, QColor
 from services.promptshield_client import PromptShieldClient
 from services.chat_backend import ChatBackend
 from services.finding_utils import locate_findings
-
+from services.ollama_rewriter import OllamaRewriter
 
 class DetectionWorker(QThread):
     """Call the detection service outside of the GUI thread."""
@@ -40,6 +41,44 @@ class DetectionWorker(QThread):
             self.error_occurred.emit(self.revision, str(error))
 
 
+class SafeRewriteWorker(QThread):
+    """Rewrite the original message using the exact spans from its completed scan."""
+
+    result_ready = Signal(int, object)
+    error_occurred = Signal(int, str)
+
+    def __init__(self, rewriter, message, flagged_spans, revision):
+        super().__init__()
+        self.rewriter = rewriter
+        self.message = message
+        self.flagged_spans = [dict(span) for span in flagged_spans]
+        self.revision = revision
+
+    def run(self):
+        try:
+            if not self.flagged_spans:
+                self.result_ready.emit(self.revision, {
+                    "status": "no_findings",
+                    "text": self.message,
+                    "finding_count": 0,
+                })
+                return
+
+            # Send the unchanged draft and the exact spans from the scan already
+            # shown in the UI. Do not run a second detection pass or alter text.
+            rewritten = self.rewriter.rewrite(
+                self.message,
+                self.flagged_spans,
+            )
+
+            self.result_ready.emit(self.revision, {
+                "status": "ok",
+                "text": rewritten,
+                "finding_count": len(self.flagged_spans),
+            })
+
+        except Exception as error:
+            self.error_occurred.emit(self.revision, str(error))
 class PrivacyWarningPopup(QFrame):
     """Larger, non-interactive privacy warning anchored to highlighted text."""
 
@@ -206,22 +245,18 @@ class MessageInput(QTextEdit):
 
     def _finding_at_point(self, point):
         """Hit-test actual displayed text cells, avoiding nearest-cursor snapping."""
-        # cursorForPosition gives a nearby insertion position; verify that
-        # the pointer is actually inside a character cell in the finding.
         cursor_pos = self.cursorForPosition(point).position()
         for finding in self.current_findings:
             first = finding["qt_start"]
             last = finding["qt_end"]
             if not (first - 1 <= cursor_pos <= last):
                 continue
-            # A finding may wrap across multiple visible lines.
             for pos in range(first, last):
                 cursor = QTextCursor(self.document())
                 cursor.setPosition(pos)
                 left_rect = self.cursorRect(cursor)
                 cursor.setPosition(pos + 1)
                 right_rect = self.cursorRect(cursor)
-                # Don't span across line breaks or wrapped lines.
                 if abs(left_rect.center().y() - right_rect.center().y()) > 3:
                     continue
                 x1 = min(left_rect.left(), right_rect.left())
@@ -237,10 +272,10 @@ class MessageInput(QTextEdit):
             if self._hovered_finding_key is not None:
                 self.dismiss_warning()
             return
+
         key = (finding["qt_start"], finding["qt_end"], finding.get("category"))
         if key != self._hovered_finding_key:
             self.dismiss_warning()
-            # Anchor to highlighted line's top at the first visible character.
             cursor = QTextCursor(self.document())
             cursor.setPosition(finding["qt_start"])
             first_rect = self.cursorRect(cursor)
@@ -318,6 +353,13 @@ class ChatWidget(QWidget):
         self._last_detection_error = None
         self._last_logged_findings = None
 
+        # Safe rewrite state: reuse the exact spans from the completed draft scan.
+        self._last_detection_text = None
+        self._last_findings = []
+        self._last_flagged_spans = []
+        self._rewrite_worker = None
+        self.rewriter = OllamaRewriter()
+
         self.setup_ui()
         self.apply_styles()
         self.scroll_area.viewport().installEventFilter(self)
@@ -385,7 +427,15 @@ class ChatWidget(QWidget):
         self.send_button.setFixedSize(44, 44)
         self.send_button.setCursor(Qt.PointingHandCursor)
         self.send_button.clicked.connect(self.send_message)
+        self.rewrite_button = QPushButton("Rewrite safely")
+        self.rewrite_button.setObjectName("rewriteButton")
+        self.rewrite_button.setCursor(Qt.PointingHandCursor)
+        self.rewrite_button.setFixedHeight(44)
+        self.rewrite_button.setMinimumWidth(118)
+        self.rewrite_button.setEnabled(False)
+        self.rewrite_button.clicked.connect(self.rewrite_safely)
         input_layout.addWidget(self.message_input)
+        input_layout.addWidget(self.rewrite_button)
         input_layout.addWidget(self.send_button)
         container_layout.addWidget(input_container)
         layout.addWidget(container)
@@ -401,14 +451,21 @@ class ChatWidget(QWidget):
         if condition not in ("active", "silent"):
             raise ValueError("Condition must be 'active' or 'silent'.")
         self.study_condition = condition
+        self.rewrite_button.setVisible(condition == "active")
         if condition == "silent":
             self.message_input.clear_highlights()
+            self.rewrite_button.setEnabled(False)
         elif self.message_input.toPlainText().strip():
             self.detection_timer.start()
 
     def on_draft_changed(self):
         self._draft_revision += 1
+        # Preserve upstream queue behavior and invalidate cached rewrite spans.
         self._check_queued = False
+        self._last_detection_text = None
+        self._last_findings = []
+        self._last_flagged_spans = []
+        self.rewrite_button.setEnabled(False)
         self.message_input.clear_highlights()
         text = self.message_input.toPlainText()
         if not text.strip():
@@ -459,11 +516,18 @@ class ChatWidget(QWidget):
             return
         if revision != self._draft_revision:
             return
+
         text = self.message_input.toPlainText()
         spans = locate_findings(text, findings)
+        self._last_detection_text = text
+        self._last_findings = findings
+        self._last_flagged_spans = spans
+        self.rewrite_button.setEnabled(
+            self.study_condition == "active" and bool(spans)
+        )
         self._last_detection_error = None
-        # Compare finding identities in memory so edits that move the same
-        # text only refresh the highlights. Emit metadata for logging.
+
+        # Preserve upstream telemetry deduplication and event payload.
         finding_keys = frozenset(
             (f.get("text", ""), f.get("category", "SENSITIVE"), f.get("tier", 1))
             for f in findings
@@ -476,8 +540,10 @@ class ChatWidget(QWidget):
                 "finding_count": len(findings),
                 "categories": sorted({f.get("category", "SENSITIVE") for f in findings}),
             })
+
         if self.study_condition == "silent":
             self.message_input.clear_highlights()
+            self.rewrite_button.setEnabled(False)
             return
         self.message_input.highlight_findings(spans)
 
@@ -489,7 +555,12 @@ class ChatWidget(QWidget):
             return
         if revision != self._draft_revision:
             return
+
         self.message_input.clear_highlights()
+        self._last_detection_text = None
+        self._last_findings = []
+        self._last_flagged_spans = []
+        self.rewrite_button.setEnabled(False)
         if error != self._last_detection_error:
             print("PromptShield detector unavailable:", error)
             self._last_detection_error = error
@@ -509,7 +580,83 @@ class ChatWidget(QWidget):
         elif self._check_queued:
             self.run_detection()
 
-    def add_message(self, text, sender="assistant", show_actions=True):
+    def rewrite_safely(self):
+        """Rewrite the current draft using the exact spans from its completed scan."""
+        if self.study_condition != "active":
+            return
+        message = self.message_input.toPlainText()
+        if not message.strip() or self._rewrite_worker is not None:
+            return
+        if self._last_detection_text != message or not self._last_flagged_spans:
+            QMessageBox.information(
+                self,
+                "Still checking your message",
+                "Wait for the privacy scan to finish, then try Rewrite safely again.",
+            )
+            self.detection_timer.start()
+            return
+
+        self.rewrite_button.setEnabled(False)
+        self.rewrite_button.setText("Rewriting…")
+        worker = SafeRewriteWorker(
+            self.rewriter,
+            message,
+            self._last_flagged_spans,
+            self._draft_revision,
+        )
+        worker.result_ready.connect(self.on_safe_rewrite_result)
+        worker.error_occurred.connect(self.on_safe_rewrite_error)
+        worker.finished.connect(self.on_safe_rewrite_finished)
+        self._rewrite_worker = worker
+        worker.start()
+
+    def on_safe_rewrite_result(self, revision, result):
+        if revision != self._draft_revision:
+            return
+        if result.get("status") == "no_findings":
+            self._last_detection_text = None
+            self._last_findings = []
+            self._last_flagged_spans = []
+            QMessageBox.information(
+                self,
+                "No sensitive information detected",
+                "The detector did not find any supported sensitive information in this message.",
+            )
+            return
+
+        rewritten_text = result.get("text", "")
+        self.add_message(
+            rewritten_text,
+            sender="assistant",
+            show_actions=True,
+            action_text=rewritten_text,
+        )
+
+    def on_safe_rewrite_error(self, revision, error):
+        if revision != self._draft_revision:
+            return
+        QMessageBox.warning(
+            self,
+            "Safe rewrite failed",
+            "PromptShield could not create a rewrite that passed privacy checks. "
+            "Your draft has not been changed. Check that Ollama and the detector "
+            "are running, then try again.\n\nDetails: " + error,
+        )
+
+    def on_safe_rewrite_finished(self):
+        worker = self._rewrite_worker
+        self._rewrite_worker = None
+        if worker is not None:
+            worker.deleteLater()
+        self.rewrite_button.setText("Rewrite safely")
+        current_text = self.message_input.toPlainText()
+        self.rewrite_button.setEnabled(
+            self.study_condition == "active"
+            and bool(self._last_flagged_spans)
+            and self._last_detection_text == current_text
+        )
+
+    def add_message(self, text, sender="assistant", show_actions=True, action_text=None):
         message_row = QWidget()
         message_row.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         row_layout = QHBoxLayout(message_row)
@@ -548,8 +695,9 @@ class ChatWidget(QWidget):
             replace_button.setObjectName("replaceButton")
             replace_button.setCursor(Qt.PointingHandCursor)
             replace_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-            insert_button.clicked.connect(lambda checked=False, content=text: self.insert_requested.emit(content))
-            replace_button.clicked.connect(lambda checked=False, content=text: self.replace_requested.emit(content))
+            action_content = text if action_text is None else action_text
+            insert_button.clicked.connect(lambda checked=False, content=action_content: self.insert_requested.emit(content))
+            replace_button.clicked.connect(lambda checked=False, content=action_content: self.replace_requested.emit(content))
             actions_layout.addWidget(insert_button)
             actions_layout.addWidget(replace_button)
             bubble_layout.addWidget(actions_container)
@@ -572,6 +720,10 @@ class ChatWidget(QWidget):
             return
         self.add_message(text, sender="user", show_actions=False)
         self.detection_timer.stop()
+        self._last_detection_text = None
+        self._last_findings = []
+        self._last_flagged_spans = []
+        self.rewrite_button.setEnabled(False)
         self.message_input.clear_highlights()
         self.message_input.clear()
         self.message_submitted.emit(text)
@@ -591,7 +743,10 @@ class ChatWidget(QWidget):
 
     def on_chat_error(self):
         self._chat_history.pop()
-        self.add_message("The local assistant could not reply. Please try again.", show_actions=False)
+        self.add_message(
+            "The local assistant could not reply. Please try again.",
+            show_actions=False,
+        )
         self.set_awaiting_reply(False)
 
     def scroll_to_bottom(self):
@@ -609,6 +764,10 @@ class ChatWidget(QWidget):
             if widget is not None:
                 widget.deleteLater()
         self.detection_timer.stop()
+        self._last_detection_text = None
+        self._last_findings = []
+        self._last_flagged_spans = []
+        self.rewrite_button.setEnabled(False)
         self.message_input.clear()
         self.message_input.clear_highlights()
         self._check_queued = False
@@ -647,6 +806,8 @@ class ChatWidget(QWidget):
         self.chat_backend.cancel()
         self.message_input.dismiss_warning()
         self.stop_detection()
+        if self._rewrite_worker is not None and self._rewrite_worker.isRunning():
+            self._rewrite_worker.wait()
 
     def closeEvent(self, event):
         self.shutdown()
@@ -670,6 +831,9 @@ class ChatWidget(QWidget):
             QTextEdit#messageInput:focus { border: 1px solid #2563EB; }
             QPushButton#sendButton { background-color: #2563EB; color: white; border: none; border-radius: 10px; font-size: 20px; }
             QPushButton#sendButton:hover { background-color: #1D4ED8; }
+            QPushButton#rewriteButton { background-color: #0F766E; color: white; border: none; border-radius: 9px; padding: 8px 12px; font-size: 12px; font-weight: bold; }
+            QPushButton#rewriteButton:hover { background-color: #115E59; }
+            QPushButton#rewriteButton:disabled { background-color: #94A3B8; color: #F8FAFC; }
             QPushButton#insertButton { background-color: #2563EB; color: white; border: none; border-radius: 6px; padding: 7px 8px; font-size: 11px; }
             QPushButton#insertButton:hover { background-color: #1D4ED8; }
             QPushButton#replaceButton { background-color: #FFFFFF; color: #334155; border: 1px solid #CBD5E1; border-radius: 6px; padding: 7px 8px; font-size: 11px; }
