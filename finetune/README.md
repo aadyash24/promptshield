@@ -85,6 +85,24 @@ questions ("what is diabetes"), public figures, fictional characters, example fo
 `XXX-XX-XXXX`, or vague symptoms with no named condition. Mental health, HIV and STIs, substance use,
 reproductive and genetic health are tier 3 (high). Copy each finding exactly as written.
 
+## The final detector (use this for the demo and the study)
+
+The final detector is `b-tok2`: one DistilBERT token classifier trained on all 18 categories
+(medical, financial and personal) in a single model. Its weights are too big for git, so they live on the
+repo's Releases page (tag `model-b-tok2`). To get and run it, from `finetune/`:
+
+```
+pip install torch "transformers>=4.51"      # only these two are needed to run the detector
+python get_model.py          # downloads about 234 MB, checks it, unpacks it into out/b-tok2
+python serve.py              # starts the server with the final detector
+```
+Already have `b-tok2.zip`? Use `python get_model.py --zip path/to/b-tok2.zip`. `serve.py` stops with a clear
+message if the model is missing, instead of quietly falling back to rules only.
+
+This copy was retrained from the same data and settings as the original run (the original files were lost when
+a Colab session reset). Its training log matched the original line for line, and it reproduces the original's
+saved hand-written results exactly (`results/final-hand-*`).
+
 ## Option B: a token classifier (fast, recommended to compare)
 
 Instead of a generative LLM, fine-tune a small BERT-style encoder that labels every word
