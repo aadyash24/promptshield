@@ -91,6 +91,8 @@ def main():
     ap.add_argument("--token-model", help="folder of a token classifier trained with train_token.py")
     ap.add_argument("--base", help="HF model id of the base model")
     ap.add_argument("--adapter", help="path to a LoRA adapter folder from train_lora.py")
+    ap.add_argument("--with-regex", action="store_true",
+                    help="merge the regex layer into the predictions, like the extension does (model plus regex)")
     ap.add_argument("--domain", choices=["medical", "financial", "personal"],
                     help="score only this domain's categories (gold and predictions are filtered the same way)")
     ap.add_argument("--name", help="results folder name")
@@ -115,6 +117,10 @@ def main():
     else:
         preds, valid = model_predictor(args.base, args.adapter, rows, args.batch_size, args.max_new_tokens)
     secs = time.time() - t0
+    if args.with_regex:
+        from hybrid import merge
+        preds = [merge(r["prompt"], p) for r, p in zip(rows, preds)]
+        label = f"{label} + regex"
 
     golds = [r["findings"] for r in rows]
     if args.domain:

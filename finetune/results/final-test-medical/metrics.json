@@ -1,0 +1,87 @@
+{
+  "strict": {
+    "precision": 0.6479,
+    "recall": 0.8152,
+    "f1": 0.722,
+    "tp": 322,
+    "fp": 175,
+    "fn": 73
+  },
+  "text_only": {
+    "precision": 0.7223,
+    "recall": 0.9089,
+    "f1": 0.8049,
+    "tp": 359,
+    "fp": 138,
+    "fn": 36
+  },
+  "tier_accuracy": 0.8969,
+  "per_tier_recall": {
+    "1": 0.9559,
+    "2": 0.8918,
+    "3": 0.6316
+  },
+  "per_category": {
+    "MEDICATION": {
+      "precision": 0.6303,
+      "recall": 0.9146,
+      "f1": 0.7463,
+      "tp": 75,
+      "fp": 44,
+      "fn": 7,
+      "support": 82
+    },
+    "MED_CONDITION": {
+      "precision": 0.5665,
+      "recall": 0.875,
+      "f1": 0.6877,
+      "tp": 98,
+      "fp": 75,
+      "fn": 14,
+      "support": 112
+    },
+    "MED_PROVIDER": {
+      "precision": 0.9155,
+      "recall": 0.9559,
+      "f1": 0.9353,
+      "tp": 65,
+      "fp": 6,
+      "fn": 3,
+      "support": 68
+    },
+    "MED_RECORD_ID": {
+      "precision": 0.6471,
+      "recall": 1.0,
+      "f1": 0.7857,
+      "tp": 66,
+      "fp": 36,
+      "fn": 0,
+      "support": 66
+    },
+    "SENSITIVE_HEALTH": {
+      "precision": 0.5625,
+      "recall": 0.2687,
+      "f1": 0.3636,
+      "tp": 18,
+      "fp": 14,
+      "fn": 49,
+      "support": 67
+    }
+  },
+  "prompt_level": {
+    "precision": 0.781,
+    "recall": 0.9692,
+    "f1": 0.865,
+    "tp": 189,
+    "fp": 53,
+    "fn": 6,
+    "positive_prompts": 195,
+    "negative_prompts": 305,
+    "false_alarm_rate": 0.1738
+  },
+  "hallucination_rate": 0.0,
+  "n_prompts": 500,
+  "valid_json_rate": 1.0,
+  "seconds": 8.0,
+  "seconds_per_prompt": 0.016
+}

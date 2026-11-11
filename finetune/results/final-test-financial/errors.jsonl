@@ -1,0 +1,82 @@
+{"id": "test-00001", "prompt": "Debug this config: DB_PASSWORD=Summer9267& and STRIPE_KEY=sk-proj-G6S1wrDMtYMWHACsZFg_VCtBddLeBG8SUFYw Be specific.", "missed": [], "extra": [["db", "CREDENTIAL"]]}
+{"id": "test-00008", "prompt": "My account number is 047023073512 at PNC. How long does an ACH transfer take?", "missed": [["pnc", "FIN_INSTITUTION"]], "extra": []}
+{"id": "test-00015", "prompt": "Pay the invoice with card 4743367062835365, expiring 09/28. Draft the confirmation email.", "missed": [["4743367062835365", "CARD_NUMBER"]], "extra": []}
+{"id": "test-00024", "prompt": "my mom goes to St. Jude's Hospital for her glaucoma and i need to help manage her Humira, how do i set reminders Also, I use Credit Union of Tennessee for my paycheck. Is there a better bank for students?", "missed": [["credit union of tennessee", "FIN_INSTITUTION"]], "extra": [["credit union of", "FIN_INSTITUTION"]]}
+{"id": "test-00032", "prompt": "My driver's license number is V0877733. How long does a renewal usually take?", "missed": [], "extra": [["v0877733", "BANK_ACCOUNT"]]}
+{"id": "test-00033", "prompt": "Is Credit Union of Tennessee or PNC better for a student checking account?", "missed": [], "extra": [["tennessee", "FIN_INSTITUTION"]]}
+{"id": "test-00035", "prompt": "Urgent: My driver's license number is S14811444. How long does a renewal usually take?", "missed": [], "extra": [["s14811444", "BANK_ACCOUNT"]]}
+{"id": "test-00043", "prompt": "Thanks in advance. My driver's license number is K4544072. How long does a renewal usually take?", "missed": [], "extra": [["k4544072", "BANK_ACCOUNT"]]}
+{"id": "test-00044", "prompt": "Is Regions Bank or US Bank better for a student checking account?", "missed": [], "extra": [["regions", "FIN_INSTITUTION"], ["us", "FIN_INSTITUTION"]]}
+{"id": "test-00047", "prompt": "Compare US Bank and Ally Bank credit cards for travel rewards.", "missed": [], "extra": [["ally", "FIN_INSTITUTION"], ["us", "FIN_INSTITUTION"]]}
+{"id": "test-00051", "prompt": "My driver's license number is F61227614. How long does a renewal usually take?", "missed": [], "extra": [["f61227614", "BANK_ACCOUNT"]]}
+{"id": "test-00055", "prompt": "Pay the invoice with card 5082-2472-5158-4857, expiring 09/28. Draft the confirmation email.", "missed": [["5082-2472-5158-4857", "CARD_NUMBER"]], "extra": []}
+{"id": "test-00057", "prompt": "Explain my tax situation. I earned $6,576 a month last year and I owe $1,167 to the IRS.", "missed": [["$6,576 a month", "INCOME"]], "extra": [["$", "BALANCE_DEBT"], ["6,576 a month", "INCOME"]]}
+{"id": "test-00062", "prompt": "my driver's license number is c7184458. how long does a renewal usually take?", "missed": [], "extra": [["c7184458", "BANK_ACCOUNT"]]}
+{"id": "test-00074", "prompt": "Compare Capital One and Ally Bank credit cards for travel rewards.", "missed": [], "extra": [["ally", "FIN_INSTITUTION"], ["capital", "FIN_INSTITUTION"]]}
+{"id": "test-00077", "prompt": "Thanks in advance. Explain my tax situation. I earned $71k last year and I owe $441 to the IRS. Keep it short.", "missed": [["$71k", "INCOME"]], "extra": [["$", "BALANCE_DEBT"], ["71k", "INCOME"]]}
+{"id": "test-00079", "prompt": "My account number is 31102257909 at Chase. How long does an ACH transfer take?", "missed": [["chase", "FIN_INSTITUTION"]], "extra": []}
+{"id": "test-00083", "prompt": "My account number is 348769023 at Charles Schwab. How long does an ACH transfer take? Be specific.", "missed": [["charles schwab", "FIN_INSTITUTION"]], "extra": []}
+{"id": "test-00085", "prompt": "Urgent: My account number is 20298071122 at Credit Union of Tennessee. How long does an ACH transfer take?", "missed": [["credit union of tennessee", "FIN_INSTITUTION"]], "extra": []}
+{"id": "test-00088", "prompt": "Compare Bank of America and Navy Federal credit cards for travel rewards.", "missed": [], "extra": [["america", "FIN_INSTITUTION"], ["navy federal", "FIN_INSTITUTION"]]}
+{"id": "test-00090", "prompt": "Explain my tax situation. I earned $11,381 a month last year and I owe $50,122 to the IRS.", "missed": [["$11,381 a month", "INCOME"]], "extra": [["$", "BALANCE_DEBT"], ["11,381 a", "INCOME"]]}
+{"id": "test-00113", "prompt": "Summarize this note: Mark Mcmillan lives at 551 Lutz Estate, East Brittany, FL 34370 and was born on July 11, 1988. My driver's license number is J88528150. How long does a renewal usually take?", "missed": [], "extra": [["j88528150", "BANK_ACCOUNT"]]}
+{"id": "test-00117", "prompt": "My account number is 7474640733 at Fidelity. How long does an ACH transfer take?", "missed": [["fidelity", "FIN_INSTITUTION"]], "extra": []}
+{"id": "test-00119", "prompt": "Explain my tax situation. I earned $184k last year and I owe $27,403 to the IRS.", "missed": [["$184k", "INCOME"]], "extra": [["$184k", "BALANCE_DEBT"]]}
+{"id": "test-00120", "prompt": "Debug this config: DB_PASSWORD=pepper4250! and STRIPE_KEY=sk-proj-RFofeJucNdlgwyr9mPQey1kvY-73KLIXJ_qu Thanks!", "missed": [["sk-proj-rfofejucndlgwyr9mpqey1kvy-73klixj_qu", "CREDENTIAL"]], "extra": [["db", "CREDENTIAL"], ["sk-proj-rfofejucndlgwyr9mpqey1kvy-73klixj_", "CREDENTIAL"]]}
+{"id": "test-00125", "prompt": "My account number is 052924227423 at Citibank. How long does an ACH transfer take?", "missed": [["citibank", "FIN_INSTITUTION"]], "extra": []}
+{"id": "test-00132", "prompt": "My account number is 064664527 at Charles Schwab. How long does an ACH transfer take? Be specific.", "missed": [["charles schwab", "FIN_INSTITUTION"]], "extra": []}
+{"id": "test-00149", "prompt": "ok so Is PNC or Bank of America better for a student checking account? Thanks!", "missed": [], "extra": [["bank of america", "FIN_INSTITUTION"], ["pnc", "FIN_INSTITUTION"]]}
+{"id": "test-00154", "prompt": "Compare Regions Bank and Credit Union of Tennessee credit cards for travel rewards.", "missed": [], "extra": [["credit union of tennessee", "FIN_INSTITUTION"], ["regions bank", "FIN_INSTITUTION"]]}
+{"id": "test-00166", "prompt": "My account number is 424723599 at First Horizon. How long does an ACH transfer take? Thanks!", "missed": [["first horizon", "FIN_INSTITUTION"]], "extra": []}
+{"id": "test-00169", "prompt": "compare ally bank and fidelity credit cards for travel rewards.", "missed": [], "extra": [["ally", "FIN_INSTITUTION"], ["fidelity", "FIN_INSTITUTION"]]}
+{"id": "test-00182", "prompt": "Explain my tax situation. I earned $3,074 a month last year and I owe $369 to the IRS.", "missed": [["$3,074 a month", "INCOME"]], "extra": [["$", "BALANCE_DEBT"], ["3,074 a month", "INCOME"]]}
+{"id": "test-00190", "prompt": "Hi Claude, Compare First Horizon and Regions Bank credit cards for travel rewards.", "missed": [], "extra": [["first horizon", "FIN_INSTITUTION"], ["regions", "FIN_INSTITUTION"]]}
+{"id": "test-00199", "prompt": "Urgent: Pay the invoice with card 4563357374685886, expiring 09/28. Draft the confirmation email.", "missed": [["4563357374685886", "CARD_NUMBER"]], "extra": []}
+{"id": "test-00204", "prompt": "Explain my tax situation. I earned $96,500 last year and I owe $4,086 to the IRS.", "missed": [["$96,500", "INCOME"]], "extra": [["$96,500", "BALANCE_DEBT"]]}
+{"id": "test-00218", "prompt": "My driver's license number is G22857838. How long does a renewal usually take?", "missed": [], "extra": [["g22857838", "BANK_ACCOUNT"]]}
+{"id": "test-00222", "prompt": "Compare Credit Union of Tennessee and Charles Schwab credit cards for travel rewards. Be specific.", "missed": [], "extra": [["charles schwab", "FIN_INSTITUTION"], ["union of tennessee", "FIN_INSTITUTION"]]}
+{"id": "test-00225", "prompt": "explain my tax situation. i earned $13,100 a month last year and i owe $4,176 to the irs. insurance denied my claim. member id esz712641741, claim for graves' disease. draft an appeal letter.", "missed": [["$13,100 a month", "INCOME"]], "extra": [["$", "BALANCE_DEBT"], ["13,100 a month", "INCOME"], ["irs", "FIN_INSTITUTION"]]}
+{"id": "test-00228", "prompt": "explain my tax situation. i earned $8,262 a month last year and i owe $72,217 to the irs.", "missed": [["$8,262 a month", "INCOME"]], "extra": [["$", "BALANCE_DEBT"], ["8,262 a month", "INCOME"]]}
+{"id": "test-00233", "prompt": "Explain my tax situation. I earned $8,519 a month last year and I owe $291 to the IRS.", "missed": [["$8,519 a month", "INCOME"]], "extra": [["$", "BALANCE_DEBT"], ["8,519 a month", "INCOME"]]}
+{"id": "test-00238", "prompt": "My driver's license number is F0333997. How long does a renewal usually take? Keep it short.", "missed": [], "extra": [["f0333997", "BANK_ACCOUNT"]]}
+{"id": "test-00247", "prompt": "my mom goes to Munozmouth Behavioral Health for her vertigo and i need to help manage her tramadol, how do i set reminders Debug this config: DB_PASSWORD=Summer55! and STRIPE_KEY=AKIAWHO7UFAQPQLRIHMC", "missed": [], "extra": [["db", "CREDENTIAL"]]}
+{"id": "test-00251", "prompt": "I use Truist for my paycheck. Is there a better bank for students?", "missed": [["truist", "FIN_INSTITUTION"]], "extra": []}
+{"id": "test-00260", "prompt": "Explain my tax situation. I earned $236,000 last year and I owe $57,319 to the IRS.", "missed": [["$236,000", "INCOME"]], "extra": [["$236,000", "BALANCE_DEBT"]]}
+{"id": "test-00261", "prompt": "My driver's license number is I32271578. How long does a renewal usually take?", "missed": [], "extra": [["i32271578", "BANK_ACCOUNT"]]}
+{"id": "test-00262", "prompt": "Debug this config: DB_PASSWORD=Maple3734& and STRIPE_KEY=ghp_9qOIWLHETFsAOgFDG3fXaArA45C6ycyuW2tx", "missed": [], "extra": [["db", "CREDENTIAL"]]}
+{"id": "test-00287", "prompt": "My driver's license number is J80332422. How long does a renewal usually take?", "missed": [], "extra": [["j80332422", "BANK_ACCOUNT"]]}
+{"id": "test-00294", "prompt": "Pay the invoice with card 5504 0536 1622 0959, expiring 09/28. Draft the confirmation email.", "missed": [["5504 0536 1622 0959", "CARD_NUMBER"]], "extra": []}
+{"id": "test-00295", "prompt": "Pay the invoice with card 4554655679147531, expiring 09/28. Draft the confirmation email.", "missed": [["4554655679147531", "CARD_NUMBER"]], "extra": []}
+{"id": "test-00298", "prompt": "is navy federal or wells fargo better for a student checking account?", "missed": [], "extra": [["navy federal", "FIN_INSTITUTION"], ["wells fargo", "FIN_INSTITUTION"]]}
+{"id": "test-00300", "prompt": "Explain my tax situation. I earned $8,228 a month last year and I owe $496 to the IRS.", "missed": [["$8,228 a month", "INCOME"]], "extra": [["$", "BALANCE_DEBT"], ["8,228 a month", "INCOME"]]}
+{"id": "test-00305", "prompt": "My driver's license number is K0927818. How long does a renewal usually take?", "missed": [], "extra": [["k0927818", "BANK_ACCOUNT"]]}
+{"id": "test-00306", "prompt": "My driver's license number is D75551850. How long does a renewal usually take?", "missed": [], "extra": [["d75551850", "BANK_ACCOUNT"]]}
+{"id": "test-00316", "prompt": "My account number is 832353556921 at Navy Federal. How long does an ACH transfer take?", "missed": [["navy federal", "FIN_INSTITUTION"]], "extra": []}
+{"id": "test-00318", "prompt": "My driver's license number is C3301716. How long does a renewal usually take?", "missed": [], "extra": [["c3301716", "BANK_ACCOUNT"]]}
+{"id": "test-00330", "prompt": "Explain my tax situation. I earned $62,000 last year and I owe $132 to the IRS.", "missed": [["$62,000", "INCOME"]], "extra": [["$", "BALANCE_DEBT"], ["62,000", "INCOME"]]}
+{"id": "test-00333", "prompt": "Compare Credit Union of Tennessee and Wells Fargo credit cards for travel rewards.", "missed": [], "extra": [["union of tennessee", "FIN_INSTITUTION"], ["wells fargo", "FIN_INSTITUTION"]]}
+{"id": "test-00334", "prompt": "Compare Credit Union of Tennessee and Fidelity credit cards for travel rewards.", "missed": [], "extra": [["fidelity", "FIN_INSTITUTION"], ["union of tennessee", "FIN_INSTITUTION"]]}
+{"id": "test-00347", "prompt": "Explain my tax situation. I earned $98k last year and I owe $6,552 to the IRS.", "missed": [["$98k", "INCOME"]], "extra": [["$98k", "BALANCE_DEBT"]]}
+{"id": "test-00365", "prompt": "compare citibank and regions bank credit cards for travel rewards.", "missed": [], "extra": [["citibank", "FIN_INSTITUTION"], ["regions bank", "FIN_INSTITUTION"]]}
+{"id": "test-00367", "prompt": "Is Bank of America or PNC better for a student checking account?", "missed": [], "extra": [["america", "FIN_INSTITUTION"]]}
+{"id": "test-00372", "prompt": "Debug this config: DB_PASSWORD=river8764% and STRIPE_KEY=sk-proj-451nPxl948UB_3IWS7ENVMyTiTJOlJO_AEZ3", "missed": [], "extra": [["db", "CREDENTIAL"]]}
+{"id": "test-00375", "prompt": "Pay the invoice with card 4425-2654-1836-2222, expiring 09/28. Draft the confirmation email.", "missed": [["4425-2654-1836-2222", "CARD_NUMBER"]], "extra": []}
+{"id": "test-00377", "prompt": "Quick question: My driver's license number is U50468528. How long does a renewal usually take? Also, My driver's license number is T0875022. How long does a renewal usually take?", "missed": [], "extra": [["t0875022", "BANK_ACCOUNT"], ["u50468528", "BANK_ACCOUNT"]]}
+{"id": "test-00393", "prompt": "I use Capital One for my paycheck. Is there a better bank for students?", "missed": [["capital one", "FIN_INSTITUTION"]], "extra": []}
+{"id": "test-00395", "prompt": "Is US Bank or Bank of America better for a student checking account?", "missed": [], "extra": [["of america", "FIN_INSTITUTION"]]}
+{"id": "test-00415", "prompt": "Pay the invoice with card 4385738946211333, expiring 09/28. Draft the confirmation email.", "missed": [["4385738946211333", "CARD_NUMBER"]], "extra": []}
+{"id": "test-00420", "prompt": "My driver's license number is R39593145. How long does a renewal usually take?", "missed": [], "extra": [["r39593145", "BANK_ACCOUNT"]]}
+{"id": "test-00432", "prompt": "Explain my tax situation. I earned $226,000 last year and I owe $156 to the IRS.", "missed": [["$226,000", "INCOME"]], "extra": [["$226,", "BALANCE_DEBT"], ["000", "INCOME"]]}
+{"id": "test-00434", "prompt": "Debug this config: DB_PASSWORD=Violet2378% and STRIPE_KEY=ghp_c2AAmbRQ1NtBHXa9IkgSGwqmurDEDhrs5YkX Please answer in bullet points.", "missed": [], "extra": [["db", "CREDENTIAL"]]}
+{"id": "test-00452", "prompt": "My driver's license number is C21210238. How long does a renewal usually take?", "missed": [], "extra": [["c21210238", "BANK_ACCOUNT"]]}
+{"id": "test-00453", "prompt": "My driver's license number is M70478832. How long does a renewal usually take?", "missed": [], "extra": [["m70478832", "BANK_ACCOUNT"]]}
+{"id": "test-00459", "prompt": "My driver's license number is D55323068. How long does a renewal usually take?", "missed": [], "extra": [["d55323068", "BANK_ACCOUNT"]]}
+{"id": "test-00460", "prompt": "Compare Bank of America and Credit Union of Tennessee credit cards for travel rewards.", "missed": [], "extra": [["credit union of tennessee", "FIN_INSTITUTION"], ["of america", "FIN_INSTITUTION"]]}
+{"id": "test-00462", "prompt": "Explain my tax situation. I earned $99k last year and I owe $43,445 to the IRS.", "missed": [["$99k", "INCOME"]], "extra": [["$99k", "BALANCE_DEBT"]]}
+{"id": "test-00465", "prompt": "Pay the invoice with card 3797 352672 43586, expiring 09/28. Draft the confirmation email.", "missed": [["3797 352672 43586", "CARD_NUMBER"]], "extra": []}
+{"id": "test-00466", "prompt": "Debug this config: DB_PASSWORD=Maple3625% and STRIPE_KEY=AKIAHI14MZQIMTEMLEG3", "missed": [], "extra": [["db", "CREDENTIAL"]]}
+{"id": "test-00478", "prompt": "Explain my tax situation. I earned $120,000 last year and I owe $40,605 to the IRS.", "missed": [["$120,000", "INCOME"]], "extra": [["$120,000", "BALANCE_DEBT"]]}
+{"id": "test-00481", "prompt": "Urgent: My account number is 477622168 at Wells Fargo. How long does an ACH transfer take?", "missed": [["wells fargo", "FIN_INSTITUTION"]], "extra": []}
+{"id": "test-00483", "prompt": "Been struggling with a Huntington's disease diagnosis for months and fairmont oncology institute wants to change my plan. What should I ask?\n\nDebug this config: DB_PASSWORD=violet8316* and STRIPE_KEY=ghp_CdB2InIj0XQIZEOXoYrsOgs9vuPZv4ZIcR8k", "missed": [], "extra": [["db", "CREDENTIAL"]]}
+{"id": "test-00485", "prompt": "Hey! Explain my tax situation. I earned $256,200 last year and I owe $6,445 to the IRS.", "missed": [["$256,200", "INCOME"]], "extra": [["$256,200", "BALANCE_DEBT"]]}
+{"id": "test-00490", "prompt": "Compare Credit Union of Tennessee and Capital One credit cards for travel rewards.", "missed": [], "extra": [["capital", "FIN_INSTITUTION"], ["union of tennessee", "FIN_INSTITUTION"]]}

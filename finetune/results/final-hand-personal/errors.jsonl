@@ -1,0 +1,17 @@
+{"id": "hand-001", "prompt": "Can you rewrite this to sound more professional: Hi Marcus, it's Priya. Can you send the invoice to priya.raman88@gmail.com? Thanks", "missed": [["marcus", "PERSON_NAME"], ["priya.raman88@gmail.com", "EMAIL"]], "extra": [["raman88@gmail.com", "EMAIL"]]}
+{"id": "hand-002", "prompt": "I'm applying for a mortgage and my lender asked for my SSN, 512-48-9034. Is it normal to email it?", "missed": [], "extra": [["ssn", "GOV_ID"]]}
+{"id": "hand-012", "prompt": "How do I stop my AWS key from being leaked? Mine is AKIAIOSFODNN7EXAMPLE and I pushed it to GitHub by accident.", "missed": [], "extra": [["github", "EMAIL"], ["github", "WORKPLACE_SCHOOL"]]}
+{"id": "hand-029", "prompt": "I took a screenshot of my passport, number X12345678, and now I'm worried. What should I do?", "missed": [["x12345678", "GOV_ID"]], "extra": []}
+{"id": "hand-036", "prompt": "Write a story about a detective named Mara Voss who investigates a missing violin.", "missed": [], "extra": [["mara voss", "PERSON_NAME"]]}
+{"id": "hand-038", "prompt": "Here's our onboarding doc for the new hire Carlos Mendes (born 11/02/1996, lives at 77 Birchwood Lane, Knoxville). Summarize it in 3 bullets.", "missed": [["77 birchwood lane, knoxville", "HOME_ADDRESS"]], "extra": [["77 birchwood lane, knoxville)", "HOME_ADDRESS"]]}
+{"id": "hand-055", "prompt": "My Visa 4539 1488 0343 6467 got declined at the pump even though I have money in the account. Any idea why?", "missed": [], "extra": [["0343", "GOV_ID"]]}
+{"id": "hand-059", "prompt": "Can you check this invoice for me? The invoice reference is INV-2026-00841 and the total due is $1,240.00.", "missed": [], "extra": [["inv", "PHONE"], ["inv-2026-00841", "GOV_ID"]]}
+{"id": "hand-063", "prompt": "The IBAN on the wire instructions is DE89370400440532013000. Is it normal for a vendor to ask for that over email?", "missed": [], "extra": [["de89370400440532013000", "GOV_ID"]]}
+{"id": "hand-065", "prompt": "The support case number is CASE-7104826 if you need to look up my ticket history.", "missed": [], "extra": [["case-", "PHONE"]]}
+{"id": "hand-072", "prompt": "fix the grammar- Hello Mr. Delgado, this is Tyler from your chem lab section, my number is 865-555-0187 if you need anything", "missed": [["delgado", "PERSON_NAME"]], "extra": [["mr. delgado", "PERSON_NAME"]]}
+{"id": "hand-073", "prompt": "rewrite my linkedin headline: junior at UT Knoxville studying cybersecurity, SWE @ Brightline Analytics Summer 2027", "missed": [["brightline analytics", "WORKPLACE_SCHOOL"]], "extra": [["swe @ brightline analytics", "EMAIL"]]}
+{"id": "hand-074", "prompt": "i lost my wallet w my drivers license in it, can someone use my number is T8830142 to scam me?", "missed": [["t8830142", "GOV_ID"]], "extra": [["t8830142", "PHONE"]]}
+{"id": "hand-077", "prompt": "my sister Jenna needs a passport for our trip, usiing my pasport ID which is A47219983, can i use mine as a reference on her application?", "missed": [["a47219983", "GOV_ID"]], "extra": []}
+{"id": "hand-078", "prompt": "write a text to my coworker sam reminding him the shift at Riverbend Coffee starts at 6, his cell is 6155550129", "missed": [], "extra": [["6", "DATE_OF_BIRTH"]]}
+{"id": "hand-080", "prompt": "who did taylor swift date before travis kelce?", "missed": [], "extra": [["travis", "PERSON_NAME"]]}
+{"id": "hand-081", "prompt": "write a short story about a girl named Wren Calloway who finds a map in her grandma's attic", "missed": [], "extra": [["wren calloway", "PERSON_NAME"]]}

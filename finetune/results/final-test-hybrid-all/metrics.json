@@ -1,0 +1,204 @@
+{
+  "strict": {
+    "precision": 0.5784,
+    "recall": 0.7134,
+    "f1": 0.6389,
+    "tp": 483,
+    "fp": 352,
+    "fn": 194
+  },
+  "text_only": {
+    "precision": 0.6886,
+    "recall": 0.8493,
+    "f1": 0.7606,
+    "tp": 575,
+    "fp": 260,
+    "fn": 102
+  },
+  "tier_accuracy": 0.9165,
+  "per_tier_recall": {
+    "1": 0.9,
+    "2": 0.8374,
+    "3": 0.3798
+  },
+  "per_category": {
+    "BALANCE_DEBT": {
+      "precision": 0.5143,
+      "recall": 1.0,
+      "f1": 0.6792,
+      "tp": 18,
+      "fp": 17,
+      "fn": 0,
+      "support": 18
+    },
+    "BANK_ACCOUNT": {
+      "precision": 0.3478,
+      "recall": 0.5333,
+      "f1": 0.4211,
+      "tp": 8,
+      "fp": 15,
+      "fn": 7,
+      "support": 15
+    },
+    "CARD_NUMBER": {
+      "precision": 1.0,
+      "recall": 0.625,
+      "f1": 0.7692,
+      "tp": 5,
+      "fp": 0,
+      "fn": 3,
+      "support": 8
+    },
+    "CREDENTIAL": {
+      "precision": 0.775,
+      "recall": 0.9688,
+      "f1": 0.8611,
+      "tp": 31,
+      "fp": 9,
+      "fn": 1,
+      "support": 32
+    },
+    "DATE_OF_BIRTH": {
+      "precision": 0.7576,
+      "recall": 1.0,
+      "f1": 0.8621,
+      "tp": 25,
+      "fp": 8,
+      "fn": 0,
+      "support": 25
+    },
+    "EMAIL": {
+      "precision": 0.7692,
+      "recall": 1.0,
+      "f1": 0.8696,
+      "tp": 10,
+      "fp": 3,
+      "fn": 0,
+      "support": 10
+    },
+    "FIN_INSTITUTION": {
+      "precision": 0.2553,
+      "recall": 0.48,
+      "f1": 0.3333,
+      "tp": 12,
+      "fp": 35,
+      "fn": 13,
+      "support": 25
+    },
+    "GOV_ID": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "tp": 0,
+      "fp": 65,
+      "fn": 20,
+      "support": 20
+    },
+    "HOME_ADDRESS": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "tp": 14,
+      "fp": 0,
+      "fn": 0,
+      "support": 14
+    },
+    "INCOME": {
+      "precision": 0.0909,
+      "recall": 0.0556,
+      "f1": 0.069,
+      "tp": 1,
+      "fp": 10,
+      "fn": 17,
+      "support": 18
+    },
+    "MEDICATION": {
+      "precision": 0.6316,
+      "recall": 0.878,
+      "f1": 0.7347,
+      "tp": 72,
+      "fp": 42,
+      "fn": 10,
+      "support": 82
+    },
+    "MED_CONDITION": {
+      "precision": 0.5833,
+      "recall": 0.875,
+      "f1": 0.7,
+      "tp": 98,
+      "fp": 70,
+      "fn": 14,
+      "support": 112
+    },
+    "MED_PROVIDER": {
+      "precision": 0.9559,
+      "recall": 0.9559,
+      "f1": 0.9559,
+      "tp": 65,
+      "fp": 3,
+      "fn": 3,
+      "support": 68
+    },
+    "MED_RECORD_ID": {
+      "precision": 0.5938,
+      "recall": 0.2879,
+      "f1": 0.3878,
+      "tp": 19,
+      "fp": 13,
+      "fn": 47,
+      "support": 66
+    },
+    "PERSON_NAME": {
+      "precision": 0.8191,
+      "recall": 1.0,
+      "f1": 0.9006,
+      "tp": 77,
+      "fp": 17,
+      "fn": 0,
+      "support": 77
+    },
+    "PHONE": {
+      "precision": 0.1481,
+      "recall": 0.4,
+      "f1": 0.2162,
+      "tp": 4,
+      "fp": 23,
+      "fn": 6,
+      "support": 10
+    },
+    "SENSITIVE_HEALTH": {
+      "precision": 0.5517,
+      "recall": 0.2388,
+      "f1": 0.3333,
+      "tp": 16,
+      "fp": 13,
+      "fn": 51,
+      "support": 67
+    },
+    "WORKPLACE_SCHOOL": {
+      "precision": 0.4706,
+      "recall": 0.8,
+      "f1": 0.5926,
+      "tp": 8,
+      "fp": 9,
+      "fn": 2,
+      "support": 10
+    }
+  },
+  "prompt_level": {
+    "precision": 0.8206,
+    "recall": 1.0,
+    "f1": 0.9014,
+    "tp": 311,
+    "fp": 68,
+    "fn": 0,
+    "positive_prompts": 311,
+    "negative_prompts": 189,
+    "false_alarm_rate": 0.3598
+  },
+  "hallucination_rate": 0.0,
+  "n_prompts": 500,
+  "valid_json_rate": 1.0,
+  "seconds": 8.2,
+  "seconds_per_prompt": 0.016
+}

@@ -1,0 +1,11 @@
+{"id": "hand-017", "prompt": "My Visa 4539 1488 0343 6467 got declined at the gas station but I have money in my account. Why would that happen?", "missed": [["4539 1488 0343 6467", "CARD_NUMBER"]], "extra": []}
+{"id": "hand-024", "prompt": "What's the best way to ask my boss for a raise? I currently earn $64k.", "missed": [["$64k", "INCOME"]], "extra": []}
+{"id": "hand-030", "prompt": "Compare Chase and Bank of America credit cards for travel rewards.", "missed": [], "extra": [["bank of america", "FIN_INSTITUTION"], ["chase", "FIN_INSTITUTION"]]}
+{"id": "hand-055", "prompt": "My Visa 4539 1488 0343 6467 got declined at the pump even though I have money in the account. Any idea why?", "missed": [["4539 1488 0343 6467", "CARD_NUMBER"]], "extra": []}
+{"id": "hand-059", "prompt": "Can you check this invoice for me? The invoice reference is INV-2026-00841 and the total due is $1,240.00.", "missed": [], "extra": [["$1,240.00", "INCOME"]]}
+{"id": "hand-060", "prompt": "My available credit limit is $6,400.00 this month. Is that normal for a starter card?", "missed": [], "extra": [["$6,400.", "BALANCE_DEBT"], ["00", "INCOME"]]}
+{"id": "hand-062", "prompt": "I just got a bonus of $4,500 on top of my usual paycheck. Should I put all of it into my emergency fund?", "missed": [["$4,500", "INCOME"]], "extra": [["$4,500", "BALANCE_DEBT"]]}
+{"id": "hand-063", "prompt": "The IBAN on the wire instructions is DE89370400440532013000. Is it normal for a vendor to ask for that over email?", "missed": [["de89370400440532013000", "BANK_ACCOUNT"]], "extra": []}
+{"id": "hand-064", "prompt": "My statement says I'm overdrawn by $72.18. Will that hit my credit score?", "missed": [["$72.18", "BALANCE_DEBT"]], "extra": [["$72.18", "INCOME"]]}
+{"id": "hand-065", "prompt": "The support case number is CASE-7104826 if you need to look up my ticket history.", "missed": [], "extra": [["7104826", "BANK_ACCOUNT"]]}
+{"id": "hand-066", "prompt": "My rent is $1,850 a month and I'm trying to figure out if that's too much relative to my income.", "missed": [], "extra": [["$", "BALANCE_DEBT"], ["1,850 a month", "INCOME"]]}
