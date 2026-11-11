@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Local server for the demo and the user study. Everything stays on this computer.
 
-    python serve.py --token-model out/tok-distilbert                       # token classifier (fast)
+    python get_model.py                                                    # once: download the final detector
+    python serve.py                                                        # runs the final detector (out/b-tok2)
+    python serve.py --token-model out/tok-distilbert                       # a different token classifier
     python serve.py --base Qwen/Qwen3-1.7B --adapter out/adapter   # fine-tuned LLM
     python serve.py --regex-only                                              # no model, for testing
 
@@ -32,6 +34,7 @@ HERE = Path(__file__).parent
 MOCK_ROOT = (HERE.parent / "study" / "mock").resolve()
 DEMO_ROOT = (HERE.parent / "study" / "demo").resolve()
 MAX_PROMPT = 4000
+DEFAULT_TOKEN_MODEL = HERE / "out" / "b-tok2"  # the final combined detector, see get_model.py
 
 PID_RE = re.compile(r"^[A-Za-z0-9_-]{1,32}$")
 TASK_RE = re.compile(r"^[A-Za-z0-9_-]{0,32}$")
@@ -271,10 +274,19 @@ def main():
     ap.add_argument("--seed", type=int, default=None, help="seed for the assignment coin flips")
     args = ap.parse_args()
 
+    token_model = args.token_model
+    if not token_model and not args.base and not args.regex_only:
+        # Default: the final combined detector, so the study never runs on the wrong model by accident.
+        if not DEFAULT_TOKEN_MODEL.is_dir():
+            raise SystemExit(f"The final detector is not downloaded yet ({DEFAULT_TOKEN_MODEL}).\n"
+                             "Run: python get_model.py\n"
+                             "Or pass --token-model <folder>, or --regex-only to use the rules only.")
+        token_model = str(DEFAULT_TOKEN_MODEL)
+
     log_dir = Path(args.log_dir)
     log_dir.mkdir(parents=True, exist_ok=True)
     detector = Detector(None if args.regex_only else args.base, args.adapter, args.max_new_tokens,
-                        None if args.regex_only else args.token_model)
+                        None if args.regex_only else token_model)
     handler = make_handler(detector, log_dir, Assigner(log_dir, args.seed))
     srv = ThreadingHTTPServer((args.host, args.port), handler)
     print(f"mode: {detector.mode}   logs: {log_dir}")
