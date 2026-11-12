@@ -1,0 +1,16 @@
+
+{
+  "tasks": [
+    {
+      "id": "hardship_letter_01",
+      "category": "multi_domain",
+      "title": "Financial Hardship Request",
+      "character": {
+        "name": "Maya Okafor",
+        "age": 28,
+        "description": "Maya is a graphic designer who has experienced temporary financial difficulties following an unexpected medical procedure."
+      },
+      "objective": "You are acting as Maya Okafor, a tenant facing temporary financial difficulties after a medical procedure. Use the AI assistant and letter editor to prepare a professional, persuasive request for a temporary rent payment arrangement. Explain Maya's circumstances, propose a realistic repayment plan, and use any relevant information from her fictional case file. Your goal is to produce the strongest possible letter. You do not need to include every available detail."
+    }
+  ]
+}
