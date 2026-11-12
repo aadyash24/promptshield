@@ -2,25 +2,30 @@ node_modules
 .output
 .wxt
 *.zip
-.env
 .DS_Store
+Thumbs.db
 
-finetune/out/
-finetune/__pycache__/
-finetune/**/__pycache__/
-.pytest_cache/
-finetune/study_logs/
-finetune/data/handwritten.jsonl
+# Downloaded models, runtimes, and generated training output
+/finetune/out/
+/finetune/data/handwritten.jsonl
+/ps/model/
+/ps/runtime/
+/ps/out/
 
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
 
 # Study participant data
-study_app/data/*
-!study_app/data/.gitkeep
+/finetune/study_logs/
+/ps/study_logs/
+/study_app/data/*
+!/study_app/data/.gitkeep
 
 # Local environment
 .env
-
-study_app/data/
+.env.*
+!.env.example

@@ -1,3 +1,4 @@
+import re
 from collections import deque
 
 from PySide6.QtWidgets import (
@@ -14,12 +15,12 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 from PySide6.QtCore import Qt, Signal, QTimer, QEvent, QThread, QPoint, QElapsedTimer
-from PySide6.QtGui import QFontMetrics, QTextCursor, QTextCharFormat, QColor
+from PySide6.QtGui import QCursor, QFontMetrics, QTextCursor, QTextCharFormat, QColor, QIcon, QPainter, QPixmap
 
-from services.promptshield_client import PromptShieldClient
+from ps.detection.promptshield_client import PromptShieldClient
+from ps.rewrite.ollama_rewriter import OllamaRewriter
+from ps.warnings.finding_utils import locate_findings
 from services.chat_backend import ChatBackend
-from services.finding_utils import locate_findings
-from services.ollama_rewriter import OllamaRewriter
 
 class DetectionWorker(QThread):
     """Call the detection service outside of the GUI thread."""
@@ -42,51 +43,49 @@ class DetectionWorker(QThread):
 
 
 class SafeRewriteWorker(QThread):
-    """Rewrite the original message using the exact spans from its completed scan."""
+    """Rewrite the selected finding and its sentence, then splice it into the draft."""
 
     result_ready = Signal(int, object)
     error_occurred = Signal(int, str)
 
-    def __init__(self, rewriter, message, flagged_spans, revision):
+    def __init__(self, rewriter, message, finding, other_findings, revision):
         super().__init__()
         self.rewriter = rewriter
         self.message = message
-        self.flagged_spans = [dict(span) for span in flagged_spans]
+        self.finding = dict(finding)
+        self.other_findings = [dict(span) for span in other_findings]
         self.revision = revision
 
     def run(self):
         try:
-            if not self.flagged_spans:
-                self.result_ready.emit(self.revision, {
-                    "status": "no_findings",
-                    "text": self.message,
-                    "finding_count": 0,
-                })
-                return
+            start, end = self.finding["start"], self.finding["end"]
+            left, right = 0, len(self.message)
+            for boundary in re.finditer(r"(?<=[.!?])[^\S\n]+|\n+", self.message):
+                if boundary.end() <= start:
+                    left = boundary.end()
+                elif boundary.start() >= end:
+                    right = boundary.start()
+                    break
 
-            # Send the unchanged draft and the exact spans from the scan already
-            # shown in the UI. Do not run a second detection pass or alter text.
-            rewritten = self.rewriter.rewrite(
-                self.message,
-                self.flagged_spans,
-            )
-
-            self.result_ready.emit(self.revision, {
-                "status": "ok",
-                "text": rewritten,
-                "finding_count": len(self.flagged_spans),
-            })
+            context = self.message[left:right]
+            target = {**self.finding, "start": start - left, "end": end - left}
+            rewritten = self.rewriter.rewrite(context, [target])
+            for span in self.other_findings:
+                if span["start"] < right and span["end"] > left:
+                    value = span["text"]
+                    if rewritten.count(value) != context.count(value):
+                        raise ValueError("The rewrite changed another highlighted detail.")
+            self.result_ready.emit(self.revision, (left, right, rewritten))
 
         except Exception as error:
             self.error_occurred.emit(self.revision, str(error))
 class PrivacyWarningPopup(QFrame):
-    """Larger, non-interactive privacy warning anchored to highlighted text."""
+    """Interactive privacy warning anchored to highlighted text."""
 
     def __init__(self, parent=None):
-        super().__init__(parent, Qt.ToolTip | Qt.FramelessWindowHint)
+        super().__init__(parent, Qt.Tool | Qt.FramelessWindowHint | Qt.WindowDoesNotAcceptFocus)
         self.setObjectName("privacyWarningPopup")
         self.setAttribute(Qt.WA_ShowWithoutActivating, True)
-        self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
         self.setFixedWidth(320)
 
         layout = QVBoxLayout(self)
@@ -106,6 +105,10 @@ class PrivacyWarningPopup(QFrame):
         layout.addWidget(self.heading)
         layout.addWidget(self.description)
         layout.addWidget(self.advice)
+        self.rewrite_button = QPushButton("Rewrite this detail")
+        self.rewrite_button.setCursor(Qt.PointingHandCursor)
+        self.rewrite_button.setFocusPolicy(Qt.NoFocus)
+        layout.addWidget(self.rewrite_button)
 
     def show_finding(self, finding, anchor):
         tier = finding["tier"]
@@ -140,6 +143,9 @@ class PrivacyWarningPopup(QFrame):
             }}
             QLabel#privacyWarningDescription {{ font-size: 12px; }}
             QLabel#privacyWarningAdvice {{ color: #64748B; font-size: 12px; }}
+            QPushButton {{ background: #0F766E; color: white; padding: 7px; border-radius: 6px; }}
+            QPushButton:hover {{ background: #115E59; }}
+            QPushButton:disabled {{ background: #94A3B8; }}
         """)
         self.adjustSize()
 
@@ -163,6 +169,7 @@ class MessageInput(QTextEdit):
 
     send_requested = Signal()
     warning_hover_event = Signal(str, object)
+    rewrite_requested = Signal(object)
 
     SEVERITY_COLORS = {
         1: ("#FEF9C3", "#713F12"),
@@ -178,6 +185,12 @@ class MessageInput(QTextEdit):
         self._hover_timer = QElapsedTimer()
         self._hover_count = 0
         self._privacy_popup = PrivacyWarningPopup(self)
+        self._popup_finding = None
+        self._warning_dismiss_timer = QTimer(self)
+        self._warning_dismiss_timer.setSingleShot(True)
+        self._warning_dismiss_timer.setInterval(350)
+        self._warning_dismiss_timer.timeout.connect(self._dismiss_if_pointer_left)
+        self._privacy_popup.rewrite_button.clicked.connect(self._request_popup_rewrite)
         self._privacy_popup.installEventFilter(self)
         self.viewport().setMouseTracking(True)
         self.viewport().installEventFilter(self)
@@ -231,13 +244,28 @@ class MessageInput(QTextEdit):
         self.dismiss_warning()
 
     def dismiss_warning(self):
+        self._warning_dismiss_timer.stop()
         self._privacy_popup.hide()
         self._finish_warning_hover()
+
+    def set_rewrite_pending(self, pending):
+        button = self._privacy_popup.rewrite_button
+        button.setEnabled(not pending)
+        button.setText("Rewriting…" if pending else "Rewrite this detail")
+
+    def _request_popup_rewrite(self):
+        if self._popup_finding is not None:
+            self.rewrite_requested.emit(self._popup_finding)
+
+    def _dismiss_if_pointer_left(self):
+        if not self._privacy_popup.geometry().contains(QCursor.pos()):
+            self.dismiss_warning()
 
     def _finish_warning_hover(self):
         details = self._hover_details
         self._hover_details = None
         self._hovered_finding_key = None
+        self._popup_finding = None
         if details is not None:
             self.warning_hover_event.emit("warning_hover_ended", {
                 **details, "duration_ms": self._hover_timer.elapsed(),
@@ -270,9 +298,11 @@ class MessageInput(QTextEdit):
         finding, rect = self._finding_at_point(point)
         if finding is None:
             if self._hovered_finding_key is not None:
-                self.dismiss_warning()
+                if not self._warning_dismiss_timer.isActive():
+                    self._warning_dismiss_timer.start()
             return
 
+        self._warning_dismiss_timer.stop()
         key = (finding["qt_start"], finding["qt_end"], finding.get("category"))
         if key != self._hovered_finding_key:
             self.dismiss_warning()
@@ -287,6 +317,7 @@ class MessageInput(QTextEdit):
             self._privacy_popup.show_finding(finding, anchor)
             if not self._privacy_popup.isVisible():
                 return
+            self._popup_finding = finding
             self._hovered_finding_key = key
             self._hover_count += 1
             self._hover_details = {
@@ -301,28 +332,39 @@ class MessageInput(QTextEdit):
         if watched is self.viewport():
             if event.type() == QEvent.MouseMove:
                 self._update_hover(event.position().toPoint())
-            elif event.type() in (
-                QEvent.Leave, QEvent.Wheel, QEvent.MouseButtonPress,
-                QEvent.Hide, QEvent.WindowDeactivate,
-            ):
+            elif event.type() == QEvent.Leave and self._privacy_popup.isVisible():
+                self._warning_dismiss_timer.start()
+            elif event.type() in (QEvent.Wheel, QEvent.MouseButtonPress, QEvent.Hide, QEvent.WindowDeactivate):
                 self.dismiss_warning()
-        elif watched is self._privacy_popup and event.type() == QEvent.Hide:
-            self._finish_warning_hover()
+        elif watched is self._privacy_popup:
+            if event.type() == QEvent.Enter:
+                self._warning_dismiss_timer.stop()
+            elif event.type() == QEvent.Leave:
+                self._warning_dismiss_timer.start()
+            elif event.type() == QEvent.Hide:
+                self._warning_dismiss_timer.stop()
+                self._finish_warning_hover()
         return super().eventFilter(watched, event)
 
 
 class ChatWidget(QWidget):
     message_submitted = Signal(str)
-    insert_requested = Signal(str)
-    replace_requested = Signal(str)
+    message_copied = Signal(str)
     detection_completed = Signal(object)
     sent_detection_completed = Signal(object)
 
-    def __init__(self, parent=None, study_condition="active", task_description=""):
+    def __init__(self, parent=None, study_condition="active"):
         super().__init__(parent)
         self.setObjectName("chatWidget")
         self.setAttribute(Qt.WA_StyledBackground, True)
         self.message_bubbles = []
+        copy_pixmap = QPixmap(16, 16)
+        copy_pixmap.fill(Qt.transparent)
+        with QPainter(copy_pixmap) as painter:
+            painter.setPen(QColor("#334155"))
+            painter.drawPolyline([QPoint(11, 2), QPoint(2, 2), QPoint(2, 11)])
+            painter.drawRoundedRect(5, 5, 9, 9, 1, 1)
+        self.copy_icon = QIcon(copy_pixmap)
         self.study_condition = study_condition
         self.detector = PromptShieldClient()
         self.chat_backend = ChatBackend(self)
@@ -331,15 +373,8 @@ class ChatWidget(QWidget):
         self._system_message = {
             "role": "system",
             "content": (
-                "You are a writing assistant for a fictional role-play exercise. "
-                f"Task: {task_description} "
-                "Help the user draft and revise a concise, professional letter in plain text. "
-                "If the user gives a payment schedule, quote their schedule wording verbatim "
-                "inside the letter. Keep each payment amount paired with its original date. "
-                "Use only facts supplied by the user. Omit any discussion of attachments, "
-                "supporting documents, or receipts unless the user asks for it. "
-                "Use placeholders for missing details. When drafting or revising, "
-                "return the letter directly and apply the requested changes."
+                "You are a helpful writing assistant. Follow the user's instructions "
+                "and use the facts they provide in the conversation."
             ),
         }
         self._chat_history = []
@@ -389,11 +424,8 @@ class ChatWidget(QWidget):
         header_layout.setContentsMargins(24, 18, 24, 18)
         title = QLabel("AI Assistant")
         title.setObjectName("chatTitle")
-        self.task_label = QLabel("Financial Hardship Request")
-        self.task_label.setObjectName("chatTaskLabel")
         header_layout.addWidget(title)
         header_layout.addStretch()
-        header_layout.addWidget(self.task_label)
         container_layout.addWidget(header)
 
         self.scroll_area = QScrollArea()
@@ -427,22 +459,14 @@ class ChatWidget(QWidget):
         self.send_button.setFixedSize(44, 44)
         self.send_button.setCursor(Qt.PointingHandCursor)
         self.send_button.clicked.connect(self.send_message)
-        self.rewrite_button = QPushButton("Rewrite safely")
-        self.rewrite_button.setObjectName("rewriteButton")
-        self.rewrite_button.setCursor(Qt.PointingHandCursor)
-        self.rewrite_button.setFixedHeight(44)
-        self.rewrite_button.setMinimumWidth(118)
-        self.rewrite_button.setEnabled(False)
-        self.rewrite_button.clicked.connect(self.rewrite_safely)
+        self.message_input.rewrite_requested.connect(self.rewrite_safely)
         input_layout.addWidget(self.message_input)
-        input_layout.addWidget(self.rewrite_button)
         input_layout.addWidget(self.send_button)
         container_layout.addWidget(input_container)
         layout.addWidget(container)
 
         self.add_message(
-            "Hello! I can help you draft and improve Maya's financial "
-            "hardship letter. What would you like to work on first?",
+            "How can I help you with your writing?",
             sender="assistant",
             show_actions=False,
         )
@@ -451,10 +475,8 @@ class ChatWidget(QWidget):
         if condition not in ("active", "silent"):
             raise ValueError("Condition must be 'active' or 'silent'.")
         self.study_condition = condition
-        self.rewrite_button.setVisible(condition == "active")
         if condition == "silent":
             self.message_input.clear_highlights()
-            self.rewrite_button.setEnabled(False)
         elif self.message_input.toPlainText().strip():
             self.detection_timer.start()
 
@@ -465,7 +487,6 @@ class ChatWidget(QWidget):
         self._last_detection_text = None
         self._last_findings = []
         self._last_flagged_spans = []
-        self.rewrite_button.setEnabled(False)
         self.message_input.clear_highlights()
         text = self.message_input.toPlainText()
         if not text.strip():
@@ -522,9 +543,6 @@ class ChatWidget(QWidget):
         self._last_detection_text = text
         self._last_findings = findings
         self._last_flagged_spans = spans
-        self.rewrite_button.setEnabled(
-            self.study_condition == "active" and bool(spans)
-        )
         self._last_detection_error = None
 
         # Preserve upstream telemetry deduplication and event payload.
@@ -543,7 +561,6 @@ class ChatWidget(QWidget):
 
         if self.study_condition == "silent":
             self.message_input.clear_highlights()
-            self.rewrite_button.setEnabled(False)
             return
         self.message_input.highlight_findings(spans)
 
@@ -560,7 +577,6 @@ class ChatWidget(QWidget):
         self._last_detection_text = None
         self._last_findings = []
         self._last_flagged_spans = []
-        self.rewrite_button.setEnabled(False)
         if error != self._last_detection_error:
             print("PromptShield detector unavailable:", error)
             self._last_detection_error = error
@@ -580,29 +596,20 @@ class ChatWidget(QWidget):
         elif self._check_queued:
             self.run_detection()
 
-    def rewrite_safely(self):
-        """Rewrite the current draft using the exact spans from its completed scan."""
-        if self.study_condition != "active":
+    def rewrite_safely(self, finding):
+        if self.study_condition != "active" or self._rewrite_worker is not None:
             return
         message = self.message_input.toPlainText()
-        if not message.strip() or self._rewrite_worker is not None:
+        if self._last_detection_text != message:
             return
-        if self._last_detection_text != message or not self._last_flagged_spans:
-            QMessageBox.information(
-                self,
-                "Still checking your message",
-                "Wait for the privacy scan to finish, then try Rewrite safely again.",
-            )
-            self.detection_timer.start()
-            return
-
-        self.rewrite_button.setEnabled(False)
-        self.rewrite_button.setText("Rewriting…")
+        bounds = (finding["start"], finding["end"])
+        other_findings = [
+            span for span in self._last_flagged_spans
+            if (span["start"], span["end"]) != bounds
+        ]
+        self.message_input.set_rewrite_pending(True)
         worker = SafeRewriteWorker(
-            self.rewriter,
-            message,
-            self._last_flagged_spans,
-            self._draft_revision,
+            self.rewriter, message, finding, other_findings, self._draft_revision,
         )
         worker.result_ready.connect(self.on_safe_rewrite_result)
         worker.error_occurred.connect(self.on_safe_rewrite_error)
@@ -610,27 +617,17 @@ class ChatWidget(QWidget):
         self._rewrite_worker = worker
         worker.start()
 
-    def on_safe_rewrite_result(self, revision, result):
-        if revision != self._draft_revision:
+    def on_safe_rewrite_result(self, revision, replacement):
+        if revision != self._draft_revision or self.study_condition != "active":
             return
-        if result.get("status") == "no_findings":
-            self._last_detection_text = None
-            self._last_findings = []
-            self._last_flagged_spans = []
-            QMessageBox.information(
-                self,
-                "No sensitive information detected",
-                "The detector did not find any supported sensitive information in this message.",
-            )
-            return
-
-        rewritten_text = result.get("text", "")
-        self.add_message(
-            rewritten_text,
-            sender="assistant",
-            show_actions=True,
-            action_text=rewritten_text,
-        )
+        start, end, text = replacement
+        draft = self.message_input.toPlainText()
+        cursor = self.message_input.textCursor()
+        cursor.setPosition(len(draft[:start].encode("utf-16-le")) // 2)
+        cursor.setPosition(len(draft[:end].encode("utf-16-le")) // 2, QTextCursor.KeepAnchor)
+        cursor.insertText(text)
+        self.message_input.setTextCursor(cursor)
+        self.message_input.setFocus()
 
     def on_safe_rewrite_error(self, revision, error):
         if revision != self._draft_revision:
@@ -648,13 +645,7 @@ class ChatWidget(QWidget):
         self._rewrite_worker = None
         if worker is not None:
             worker.deleteLater()
-        self.rewrite_button.setText("Rewrite safely")
-        current_text = self.message_input.toPlainText()
-        self.rewrite_button.setEnabled(
-            self.study_condition == "active"
-            and bool(self._last_flagged_spans)
-            and self._last_detection_text == current_text
-        )
+        self.message_input.set_rewrite_pending(False)
 
     def add_message(self, text, sender="assistant", show_actions=True, action_text=None):
         message_row = QWidget()
@@ -682,26 +673,17 @@ class ChatWidget(QWidget):
         preferred_width = max((metrics.horizontalAdvance(line) for line in text.split("\n")), default=0) + 36
 
         if sender == "assistant" and show_actions:
-            actions_container = QWidget()
-            actions_container.setObjectName("messageActions")
-            actions_layout = QVBoxLayout(actions_container)
-            actions_layout.setContentsMargins(0, 0, 0, 0)
-            actions_layout.setSpacing(6)
-            insert_button = QPushButton("Insert into Editor")
-            insert_button.setObjectName("insertButton")
-            insert_button.setCursor(Qt.PointingHandCursor)
-            insert_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-            replace_button = QPushButton("Replace Draft")
-            replace_button.setObjectName("replaceButton")
-            replace_button.setCursor(Qt.PointingHandCursor)
-            replace_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            copy_button = QPushButton()
+            copy_button.setObjectName("copyMessageButton")
+            copy_button.setIcon(self.copy_icon)
+            copy_button.setFixedSize(28, 28)
+            copy_button.setCursor(Qt.PointingHandCursor)
+            copy_button.setToolTip("Copy to clipboard")
+            copy_button.setAccessibleName("Copy to clipboard")
             action_content = text if action_text is None else action_text
-            insert_button.clicked.connect(lambda checked=False, content=action_content: self.insert_requested.emit(content))
-            replace_button.clicked.connect(lambda checked=False, content=action_content: self.replace_requested.emit(content))
-            actions_layout.addWidget(insert_button)
-            actions_layout.addWidget(replace_button)
-            bubble_layout.addWidget(actions_container)
-            preferred_width = max(preferred_width, 190)
+            copy_button.clicked.connect(lambda: self.copy_message(action_content))
+            bubble_layout.addWidget(copy_button, alignment=Qt.AlignLeft)
+            preferred_width = max(preferred_width, 56)
 
         if sender == "user":
             row_layout.addStretch()
@@ -714,6 +696,10 @@ class ChatWidget(QWidget):
         self.update_bubble_widths()
         QTimer.singleShot(0, self.scroll_to_bottom)
 
+    def copy_message(self, text):
+        QApplication.clipboard().setText(text)
+        self.message_copied.emit(text)
+
     def send_message(self):
         text = self.message_input.toPlainText().strip()
         if not text or self.message_input.isReadOnly() or self._awaiting_reply:
@@ -723,7 +709,6 @@ class ChatWidget(QWidget):
         self._last_detection_text = None
         self._last_findings = []
         self._last_flagged_spans = []
-        self.rewrite_button.setEnabled(False)
         self.message_input.clear_highlights()
         self.message_input.clear()
         self.message_submitted.emit(text)
@@ -767,7 +752,6 @@ class ChatWidget(QWidget):
         self._last_detection_text = None
         self._last_findings = []
         self._last_flagged_spans = []
-        self.rewrite_button.setEnabled(False)
         self.message_input.clear()
         self.message_input.clear_highlights()
         self._check_queued = False
@@ -819,23 +803,16 @@ class ChatWidget(QWidget):
             QFrame#chatContainer { background-color: white; border: 1px solid #E2E8F0; border-radius: 12px; }
             QWidget#chatHeader { background-color: white; }
             QLabel#chatTitle { font-size: 18px; font-weight: bold; color: #0F172A; }
-            QLabel#chatTaskLabel { background-color: #DBEAFE; color: #1D4ED8; padding: 5px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; }
             QScrollArea#conversationScroll { background-color: white; border: none; }
             QWidget#messagesContainer { background-color: white; }
             QFrame#userBubble { background-color: #DBEAFE; border: none; border-radius: 12px; }
             QFrame#assistantBubble { background-color: #F1F5F9; border: none; border-radius: 12px; }
             QLabel#messageText { font-size: 14px; color: #1E293B; background: transparent; border: none; }
-            QWidget#messageActions { background: transparent; border: none; }
             QWidget#inputContainer { background-color: white; }
             QTextEdit#messageInput { background-color: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 10px; padding: 10px; font-size: 14px; color: #0F172A; }
             QTextEdit#messageInput:focus { border: 1px solid #2563EB; }
             QPushButton#sendButton { background-color: #2563EB; color: white; border: none; border-radius: 10px; font-size: 20px; }
             QPushButton#sendButton:hover { background-color: #1D4ED8; }
-            QPushButton#rewriteButton { background-color: #0F766E; color: white; border: none; border-radius: 9px; padding: 8px 12px; font-size: 12px; font-weight: bold; }
-            QPushButton#rewriteButton:hover { background-color: #115E59; }
-            QPushButton#rewriteButton:disabled { background-color: #94A3B8; color: #F8FAFC; }
-            QPushButton#insertButton { background-color: #2563EB; color: white; border: none; border-radius: 6px; padding: 7px 8px; font-size: 11px; }
-            QPushButton#insertButton:hover { background-color: #1D4ED8; }
-            QPushButton#replaceButton { background-color: #FFFFFF; color: #334155; border: 1px solid #CBD5E1; border-radius: 6px; padding: 7px 8px; font-size: 11px; }
-            QPushButton#replaceButton:hover { background-color: #E2E8F0; }
+            QPushButton#copyMessageButton { background: transparent; border: 1px solid transparent; border-radius: 5px; }
+            QPushButton#copyMessageButton:hover, QPushButton#copyMessageButton:focus { background: #E2E8F0; border-color: #94A3B8; }
         """)

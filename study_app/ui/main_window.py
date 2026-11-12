@@ -14,6 +14,7 @@ from ui.task_widget import TaskWidget
 from ui.chat_widget import ChatWidget
 from ui.document_widget import DocumentWidget
 from ui.profile_widget import ProfileWidget
+from ui.server_status import ServerStatus
 
 from study.tasks import TaskManager
 
@@ -56,33 +57,25 @@ class MainWindow(QMainWindow):
             self.task_manager.task_count
         )
 
-        # Center: temporary document editor placeholder
+        # Right: letter editor
         self.document_panel = DocumentWidget()
 
         self.document_panel.document_submitted.connect(
             self.on_document_submitted
         )
 
-        # Right: AI chat
-        task = self.task_manager.current_task
-        self.chat_panel = ChatWidget(
-            task_description=f"{task['title']} for {task['character']['name']}."
-        )
-
-        self.chat_panel.insert_requested.connect(
-            self.document_panel.insert_text
-        )
-
-        self.chat_panel.replace_requested.connect(
-            self.replace_document
-        )
+        # Center: AI chat
+        self.chat_panel = ChatWidget()
+        self.statusBar().addPermanentWidget(ServerStatus(
+            self.chat_panel.detector.base_url, self.chat_panel.rewriter,
+        ))
 
         self.splitter.addWidget(self.task_panel)
-        self.splitter.addWidget(self.document_panel)
         self.splitter.addWidget(self.chat_panel)
+        self.splitter.addWidget(self.document_panel)
 
-        # Initial proportions: 25% / 40% / 35%
-        self.splitter.setSizes([375, 600, 525])
+        # Initial widths for the task, chat, and letter editor.
+        self.splitter.setSizes([375, 525, 600])
 
         # Allow all panels to resize
         for i in range(3):
@@ -104,29 +97,3 @@ class MainWindow(QMainWindow):
     def on_document_submitted(self, text):
         print("Final document submitted!")
         print(f"Word count: {len(text.split())}")
-
-        
-    def replace_document(self, text):
-        """Replace the document with an AI-generated response."""
-
-        from PySide6.QtWidgets import QMessageBox
-
-        if self.document_panel.is_submitted:
-            return
-
-        # No confirmation necessary if the editor is empty
-        if not self.document_panel.get_document().strip():
-            self.document_panel.set_document(text)
-            return
-
-        response = QMessageBox.question(
-            self,
-            "Replace Draft",
-            "Replace your current letter with this AI response? "
-            "Your existing draft will be overwritten.",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
-        )
-
-        if response == QMessageBox.Yes:
-            self.document_panel.set_document(text)

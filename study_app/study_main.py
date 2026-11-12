@@ -1,14 +1,19 @@
 """PromptShield study launcher and event logging."""
 
 import sys
+from pathlib import Path
 
 from PySide6.QtWidgets import (
     QApplication,
     QStackedWidget,
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
+
+# Make the sibling ps package available when this file is run directly.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from ui.main_window import MainWindow
+from ui.promptshield_setup_widget import PromptShieldSetupWidget
 from ui.study_setup_widget import StudySetupWidget
 from services.session_logger import create_logger
 
@@ -24,6 +29,8 @@ def main():
     window.setWindowTitle("PromptShield User Study")
     window.resize(1500, 850)
 
+    installation = PromptShieldSetupWidget()
+    window.addWidget(installation)
     setup = StudySetupWidget()
     window.addWidget(setup)
 
@@ -33,6 +40,7 @@ def main():
         "completed": False,
         "message_count": 0,
     }
+    installation.ready.connect(lambda: window.setCurrentWidget(session["study"] or setup))
 
     def start_study(participant_id, condition):
         if session["study"] is not None:
@@ -131,30 +139,17 @@ def main():
         )
 
         # ---------------------------------------------
-        # AI response → document interactions
+        # AI response clipboard actions
         # ---------------------------------------------
 
-        def on_insert_requested(text):
+        def on_message_copied(text):
             logger.log_event(
-                "document_insert_requested",
+                "chat_message_copied",
                 character_count=len(text),
                 word_count=len(text.split()),
             )
 
-        study.chat_panel.insert_requested.connect(
-            on_insert_requested
-        )
-
-        def on_replace_requested(text):
-            logger.log_event(
-                "document_replace_requested",
-                character_count=len(text),
-                word_count=len(text.split()),
-            )
-
-        study.chat_panel.replace_requested.connect(
-            on_replace_requested
-        )
+        study.chat_panel.message_copied.connect(on_message_copied)
 
         # ---------------------------------------------
         # Final document submission
@@ -201,9 +196,12 @@ def main():
         logger.close(status=status)
 
     setup.study_started.connect(start_study)
+    installation.service_lost.connect(lambda: window.setCurrentWidget(installation))
     app.aboutToQuit.connect(close_session)
+    app.aboutToQuit.connect(installation.shutdown)
 
     window.show()
+    QTimer.singleShot(0, installation.start)
     sys.exit(app.exec())
 
 
