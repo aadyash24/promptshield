@@ -26,7 +26,7 @@ STATUS = {
 
 
 class PromptShieldSetupWidget(QWidget):
-    ready = Signal()
+    ready = Signal(str)
     service_lost = Signal()
 
     def __init__(self, parent=None):
@@ -161,7 +161,7 @@ class PromptShieldSetupWidget(QWidget):
         if component == "setup" and state == "ready" and not self._closing:
             self._ready = True
             self.progress.hide()
-            self.ready.emit()
+            self.ready.emit(event["ollama_model"])
 
     def _offer(self, title, action):
         self.progress.hide()

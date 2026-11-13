@@ -124,6 +124,9 @@ class TokenDetector:
             enc = self.tok(batch, return_offsets_mapping=True, truncation=True, max_length=self.max_len,
                            padding=True, return_tensors="pt")
             offsets = enc.pop("offset_mapping")
+            # A DistilBERT checkpoint can ship with a BERT tokenizer that emits segment IDs.
+            if self.model.config.model_type == "distilbert":
+                enc.pop("token_type_ids", None)
             with self.torch.no_grad():
                 logits = self.model(**{k: v.to(self.device) for k, v in enc.items()}).logits
             ids = logits.argmax(-1).cpu().tolist()

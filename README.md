@@ -81,24 +81,25 @@ Logs land in `finetune/study_logs/` (gitignored). `python analyze_logs.py` summa
 
 ## Desktop study app
 
-Install the desktop dependencies with `python -m pip install -r requirements.txt`.
-Start the PromptShield detector and a local chat runtime in separate terminals.
+From the repository root on Windows, create the Conda environment and launch
+the study app.
 
 ```powershell
-python finetune/serve.py --token-model finetune/out/YOUR_CHECKPOINT
-```
-
-Use `--regex-only` in place of `--token-model ...` for a plumbing check. Confirm the
-detector's `/health` mode before collecting sessions. Set `PROMPTSHIELD_DETECTOR_URL`
-before launching the app to change the detector's base URL. Draft and sent-message
-checks both use its `/detect` endpoint.
-
-Install [Ollama for Windows](https://docs.ollama.com/windows) and pull the default chat model.
-
-```powershell
-ollama pull qwen2.5:3b
+conda env create -f environment.yml
+conda activate promptshield
 python study_app/study_main.py
 ```
+
+The environment includes the desktop UI, session plots, and the Python
+dependencies for the PromptShield detector. The app's setup screen starts the
+detector and Ollama and offers to install any missing runtime or model assets.
+You can also run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File ps/setup.ps1`
+to set up the b-tok2 checkpoint, Ollama, and `qwen2.5:3b` before opening the app.
+First-time downloads require internet access.
+
+If Qwen fails the startup check with Ollama's automatic device selection, setup
+tries a CPU-only alias of the installed model. When that check passes, the app
+uses the alias for rewriting and for its default chat backend.
 
 The app expects a running chat runtime at `http://127.0.0.1:11434/v1/chat/completions`.
 `PROMPTSHIELD_CHAT_URL` can point to another loopback chat-completions endpoint, and

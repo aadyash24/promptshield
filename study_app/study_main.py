@@ -1,5 +1,6 @@
 """PromptShield study launcher and event logging."""
 
+import os
 import sys
 from pathlib import Path
 
@@ -40,7 +41,23 @@ def main():
         "completed": False,
         "message_count": 0,
     }
-    installation.ready.connect(lambda: window.setCurrentWidget(session["study"] or setup))
+    ollama_model = ""
+
+    def configure_models(study):
+        chat = study.chat_panel
+        chat.rewriter.model = ollama_model
+        if "PROMPTSHIELD_CHAT_URL" not in os.environ and "PROMPTSHIELD_CHAT_MODEL" not in os.environ:
+            chat.chat_backend.model = ollama_model
+
+    def services_ready(model):
+        nonlocal ollama_model
+        ollama_model = model
+        study = session["study"]
+        if study is not None:
+            configure_models(study)
+        window.setCurrentWidget(study or setup)
+
+    installation.ready.connect(services_ready)
 
     def start_study(participant_id, condition):
         if session["study"] is not None:
@@ -55,6 +72,7 @@ def main():
         )
 
         study = MainWindow()
+        configure_models(study)
 
         study.participant_id = participant_id
         study.study_condition = condition

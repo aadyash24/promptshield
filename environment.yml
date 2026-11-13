@@ -1,0 +1,14 @@
+name: promptshield
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.11
+  - pyside6>=6.8
+  - matplotlib-base
+  - pytorch-cpu>=2.6
+  - transformers>=4.51,<5
+  - safetensors
+  # The detector's optional --adapter mode loads LoRA adapters through PEFT.
+  - peft=0.18.*
+  - accelerate

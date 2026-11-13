@@ -88,7 +88,7 @@ def running_service(url):
         return None
 
 
-def smoke_test():
+def check_detector():
     email = "alex@example.com"
     request = Request(
         f"{DETECTOR_URL}/detect",
@@ -102,20 +102,52 @@ def smoke_test():
     ):
         raise RuntimeError("b-tok2 did not flag the synthetic email in its startup check.")
 
+def ollama_post(path, payload):
     request = Request(
-        f"{DEFAULT_OLLAMA_URL}/api/chat",
-        data=json.dumps({
-            "model": DEFAULT_MODEL,
-            "messages": [{"role": "user", "content": "Reply with the word ready."}],
-            "stream": False,
-            "options": {"num_predict": 8},
-        }).encode(),
+        f"{DEFAULT_OLLAMA_URL}{path}",
+        data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json"},
     )
-    with LOCAL_HTTP.open(request, timeout=120) as response:
-        result = json.load(response)
-    if not result.get("message", {}).get("content", "").strip():
-        raise RuntimeError("Qwen returned an empty response in its startup check.")
+    with LOCAL_HTTP.open(request, timeout=60) as response:
+        return json.load(response)
+
+
+def check_qwen(model):
+    try:
+        result = ollama_post("/v1/chat/completions", {
+            "model": model,
+            "messages": [{"role": "user", "content": "Reply with only the word ready."}],
+            "stream": False,
+            "temperature": 0,
+            "max_tokens": 32,
+        })
+        content = result["choices"][0]["message"]["content"]
+    except (OSError, ValueError, KeyError, IndexError, TypeError) as error:
+        raise RuntimeError(f"Chat check failed for {model}: {error}") from error
+    if not isinstance(content, str) or content.strip().rstrip(".!").casefold() != "ready":
+        raise RuntimeError(f"{model} did not return the expected word in its startup check.")
+
+
+def select_qwen(report):
+    try:
+        check_qwen(DEFAULT_MODEL)
+    except RuntimeError as error:
+        report("qwen", "checking", f"{error} Trying CPU-only inference…")
+    else:
+        return DEFAULT_MODEL
+
+    cpu_model = f"{DEFAULT_MODEL}-cpu"
+    result = ollama_post("/api/create", {
+        "model": cpu_model,
+        "from": DEFAULT_MODEL,
+        "parameters": {"num_gpu": 0},
+        "stream": False,
+    })
+    if result.get("status") != "success":
+        raise RuntimeError("Ollama could not create the CPU-only Qwen model.")
+    check_qwen(cpu_model)
+    report("qwen", "ready", "Qwen passed the startup check in CPU-only mode.")
+    return cpu_model
 
 
 def main():
@@ -123,9 +155,9 @@ def main():
     closing = Event()
     shutdown_requested = Event()
 
-    def report(component, state, message):
+    def report(component, state, message, **details):
         if gui:
-            print(json.dumps(dict(component=component, state=state, message=message)), flush=True)
+            print(json.dumps(dict(component=component, state=state, message=message, **details)), flush=True)
         else:
             print(message, flush=True)
 
@@ -167,7 +199,7 @@ def main():
         if not any(model.get("name") == DEFAULT_MODEL for model in tags.get("models", [])):
             report("qwen", "missing", f"{DEFAULT_MODEL} is missing. Run ps/setup.ps1 to install it.")
             return 3
-        report("qwen", "ready", f"{DEFAULT_MODEL} is available.")
+        report("qwen", "installed", f"{DEFAULT_MODEL} is available.")
 
         health_url = f"{DETECTOR_URL}/health"
         health = running_service(health_url) if gui else None
@@ -181,12 +213,18 @@ def main():
         if health.get("mode") != "token":
             raise RuntimeError(f"Expected detector mode 'token', got {health.get('mode')!r}. Check the model and Python dependencies.")
 
+        model = DEFAULT_MODEL
         if gui:
             report("setup", "checking", "Testing the detector and Qwen with synthetic input…")
-            smoke_test()
+            check_detector()
+            report("qwen", "checking", "Testing Qwen with Ollama's automatic device selection…")
+            model = select_qwen(report)
             check_running(services)
+        if model == DEFAULT_MODEL:
+            report("qwen", "ready", f"{model} is ready.")
         report("detector", "ready", f"Detector ready at {DETECTOR_URL}.")
-        report("setup", "ready", "PromptShield is ready." if gui else "Press Ctrl+C to stop both services.")
+        report("setup", "ready", "PromptShield is ready." if gui else "Press Ctrl+C to stop both services.",
+               ollama_model=model)
         while not closing.wait(0.5):
             check_running(services)
         if not shutdown_requested.is_set():
