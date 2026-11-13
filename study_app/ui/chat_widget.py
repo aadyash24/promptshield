@@ -21,6 +21,8 @@ from ps.detection.promptshield_client import PromptShieldClient
 from ps.rewrite.ollama_rewriter import OllamaRewriter
 from ps.warnings.finding_utils import locate_findings
 from services.chat_backend import ChatBackend
+from ui.theme import study_theme
+
 
 class DetectionWorker(QThread):
     """Call the detection service outside of the GUI thread."""
@@ -84,6 +86,7 @@ class PrivacyWarningPopup(QFrame):
 
     def __init__(self, parent=None):
         super().__init__(parent, Qt.Tool | Qt.FramelessWindowHint | Qt.WindowDoesNotAcceptFocus)
+        self.tier = 1
         self.setObjectName("privacyWarningPopup")
         self.setAttribute(Qt.WA_ShowWithoutActivating, True)
         self.setFixedWidth(320)
@@ -109,9 +112,10 @@ class PrivacyWarningPopup(QFrame):
         self.rewrite_button.setCursor(Qt.PointingHandCursor)
         self.rewrite_button.setFocusPolicy(Qt.NoFocus)
         layout.addWidget(self.rewrite_button)
+        study_theme().changed.connect(self.apply_styles)
 
     def show_finding(self, finding, anchor):
-        tier = finding["tier"]
+        tier = self.tier = finding["tier"]
         category = str(finding.get("category", "SENSITIVE")).upper()
         descriptions = {
             "EMAIL": "An email address can identify or provide a way to contact someone.",
@@ -121,32 +125,11 @@ class PrivacyWarningPopup(QFrame):
             "ACCOUNT": "Account identifiers may be especially sensitive.",
             "PERSONAL": "This detail may reveal personally identifying information.",
         }
-        background, foreground = MessageInput.SEVERITY_COLORS[tier]
         self.heading.setText(f"Potential {category.replace('_', ' ').title()} disclosure · Tier {tier}")
         self.description.setText(descriptions.get(
             category, "This text may contain sensitive personal information."
         ))
-        self.setStyleSheet(f"""
-            QFrame#privacyWarningPopup {{
-                background-color: #FFFFFF;
-                border: 2px solid {foreground};
-                border-radius: 12px;
-            }}
-            QLabel {{ border: none; background: transparent; color: #334155; }}
-            QLabel#privacyWarningHeading {{
-                background-color: {background};
-                color: {foreground};
-                padding: 9px;
-                border-radius: 7px;
-                font-weight: bold;
-                font-size: 13px;
-            }}
-            QLabel#privacyWarningDescription {{ font-size: 12px; }}
-            QLabel#privacyWarningAdvice {{ color: #64748B; font-size: 12px; }}
-            QPushButton {{ background: #0F766E; color: white; padding: 7px; border-radius: 6px; }}
-            QPushButton:hover {{ background: #115E59; }}
-            QPushButton:disabled {{ background: #94A3B8; }}
-        """)
+        self.apply_styles()
         self.adjustSize()
 
         # Prefer above the text line, not above the mouse pointer.
@@ -162,6 +145,30 @@ class PrivacyWarningPopup(QFrame):
         y = min(y, bounds.bottom() - self.height() - 6)
         self.move(x, y)
         self.show()
+
+    def apply_styles(self):
+        background, foreground = MessageInput.SEVERITY_COLORS[self.tier]
+        self.setStyleSheet(study_theme().stylesheet(f"""
+            QFrame#privacyWarningPopup {{
+                background-color: $surface;
+                border: 2px solid {foreground};
+                border-radius: 12px;
+            }}
+            QLabel {{ border: none; background: transparent; color: $body; }}
+            QLabel#privacyWarningHeading {{
+                background-color: {background};
+                color: {foreground};
+                padding: 9px;
+                border-radius: 7px;
+                font-weight: bold;
+                font-size: 13px;
+            }}
+            QLabel#privacyWarningDescription {{ font-size: 12px; }}
+            QLabel#privacyWarningAdvice {{ color: $muted; font-size: 12px; }}
+            QPushButton {{ background: $teal; color: $on_primary; padding: 7px; border-radius: 6px; }}
+            QPushButton:hover {{ background: $teal_hover; }}
+            QPushButton:disabled {{ background: $disabled; }}
+        """))
 
 
 class MessageInput(QTextEdit):
@@ -358,13 +365,6 @@ class ChatWidget(QWidget):
         self.setObjectName("chatWidget")
         self.setAttribute(Qt.WA_StyledBackground, True)
         self.message_bubbles = []
-        copy_pixmap = QPixmap(16, 16)
-        copy_pixmap.fill(Qt.transparent)
-        with QPainter(copy_pixmap) as painter:
-            painter.setPen(QColor("#334155"))
-            painter.drawPolyline([QPoint(11, 2), QPoint(2, 2), QPoint(2, 11)])
-            painter.drawRoundedRect(5, 5, 9, 9, 1, 1)
-        self.copy_icon = QIcon(copy_pixmap)
         self.study_condition = study_condition
         self.detector = PromptShieldClient()
         self.chat_backend = ChatBackend(self)
@@ -396,6 +396,7 @@ class ChatWidget(QWidget):
         self.rewriter = OllamaRewriter()
 
         self.setup_ui()
+        study_theme().changed.connect(self.apply_styles)
         self.apply_styles()
         self.scroll_area.viewport().installEventFilter(self)
 
@@ -798,21 +799,31 @@ class ChatWidget(QWidget):
         super().closeEvent(event)
 
     def apply_styles(self):
-        self.setStyleSheet("""
-            QWidget#chatWidget { background-color: #F8FAFC; }
-            QFrame#chatContainer { background-color: white; border: 1px solid #E2E8F0; border-radius: 12px; }
-            QWidget#chatHeader { background-color: white; }
-            QLabel#chatTitle { font-size: 18px; font-weight: bold; color: #0F172A; }
-            QScrollArea#conversationScroll { background-color: white; border: none; }
-            QWidget#messagesContainer { background-color: white; }
-            QFrame#userBubble { background-color: #DBEAFE; border: none; border-radius: 12px; }
-            QFrame#assistantBubble { background-color: #F1F5F9; border: none; border-radius: 12px; }
-            QLabel#messageText { font-size: 14px; color: #1E293B; background: transparent; border: none; }
-            QWidget#inputContainer { background-color: white; }
-            QTextEdit#messageInput { background-color: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 10px; padding: 10px; font-size: 14px; color: #0F172A; }
-            QTextEdit#messageInput:focus { border: 1px solid #2563EB; }
-            QPushButton#sendButton { background-color: #2563EB; color: white; border: none; border-radius: 10px; font-size: 20px; }
-            QPushButton#sendButton:hover { background-color: #1D4ED8; }
+        theme = study_theme()
+        copy_pixmap = QPixmap(16, 16)
+        copy_pixmap.fill(Qt.transparent)
+        with QPainter(copy_pixmap) as painter:
+            painter.setPen(QColor(theme.colors["body"]))
+            painter.drawPolyline([QPoint(11, 2), QPoint(2, 2), QPoint(2, 11)])
+            painter.drawRoundedRect(5, 5, 9, 9, 1, 1)
+        self.copy_icon = QIcon(copy_pixmap)
+        for button in self.findChildren(QPushButton, "copyMessageButton"):
+            button.setIcon(self.copy_icon)
+        self.setStyleSheet(theme.stylesheet("""
+            QWidget#chatWidget { background-color: $page; }
+            QFrame#chatContainer { background-color: $surface; border: 1px solid $border; border-radius: 12px; }
+            QWidget#chatHeader { background-color: $surface; }
+            QLabel#chatTitle { font-size: 18px; font-weight: bold; color: $heading; }
+            QScrollArea#conversationScroll { background-color: $surface; border: none; }
+            QWidget#messagesContainer { background-color: $surface; }
+            QFrame#userBubble { background-color: $user_bubble; border: none; border-radius: 12px; }
+            QFrame#assistantBubble { background-color: $subtle; border: none; border-radius: 12px; }
+            QLabel#messageText { font-size: 14px; color: $text; background: transparent; border: none; }
+            QWidget#inputContainer { background-color: $surface; }
+            QTextEdit#messageInput { background-color: $page; border: 1px solid $control_border; border-radius: 10px; padding: 10px; font-size: 14px; color: $heading; }
+            QTextEdit#messageInput:focus { border: 1px solid $accent; }
+            QPushButton#sendButton { background-color: $primary; color: $on_primary; border: none; border-radius: 10px; font-size: 20px; }
+            QPushButton#sendButton:hover { background-color: $primary_hover; }
             QPushButton#copyMessageButton { background: transparent; border: 1px solid transparent; border-radius: 5px; }
-            QPushButton#copyMessageButton:hover, QPushButton#copyMessageButton:focus { background: #E2E8F0; border-color: #94A3B8; }
-        """)
+            QPushButton#copyMessageButton:hover, QPushButton#copyMessageButton:focus { background: $hover; border-color: $strong_border; }
+        """))

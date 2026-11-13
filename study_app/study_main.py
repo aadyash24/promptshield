@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
     QApplication,
     QStackedWidget,
 )
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import QTimer
 
 # Make the sibling ps package available when this file is run directly.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -16,15 +16,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from ui.main_window import MainWindow
 from ui.promptshield_setup_widget import PromptShieldSetupWidget
 from ui.study_setup_widget import StudySetupWidget
+from ui.theme import study_theme
 from services.session_logger import create_logger
 
 
 def main():
     app = QApplication(sys.argv)
 
-    app.styleHints().setColorScheme(
-        Qt.ColorScheme.Light
-    )
+    study_theme()
 
     window = QStackedWidget()
     window.setWindowTitle("PromptShield User Study")

@@ -10,6 +10,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal
 
+from ui.theme import study_theme
+
 
 class DocumentWidget(QWidget):
     document_submitted = Signal(str)
@@ -23,6 +25,7 @@ class DocumentWidget(QWidget):
         self.is_submitted = False
 
         self.setup_ui()
+        study_theme().changed.connect(self.apply_styles)
         self.apply_styles()
 
     def setup_ui(self):
@@ -164,39 +167,40 @@ class DocumentWidget(QWidget):
         self.document_submitted.emit(text)
 
     def apply_styles(self):
-        self.setStyleSheet("""
+        self.setStyleSheet(study_theme().stylesheet("""
             QWidget#documentWidget {
-                background-color: #FFFFFF;
+                background-color: $surface;
             }
 
             QLabel#editorTitle {
                 font-size: 20px;
                 font-weight: bold;
-                color: #0F172A;
+                color: $heading;
             }
 
             QLabel#wordCount {
                 font-size: 12px;
-                color: #64748B;
+                color: $muted;
             }
 
             QLabel#editorInstructions {
                 font-size: 13px;
-                color: #64748B;
+                color: $muted;
             }
 
             QPlainTextEdit#letterEditor {
-                background-color: #FAFBFD;
-                color: #1E293B;
-                border: 1px solid #CBD5E1;
+                background-color: $editor;
+                color: $text;
+                border: 1px solid $control_border;
                 border-radius: 10px;
                 padding: 16px;
                 font-size: 14px;
-                selection-background-color: #BFDBFE;
+                selection-background-color: $selection;
+                selection-color: $heading;
             }
 
             QPlainTextEdit#letterEditor:focus {
-                border: 1px solid #2563EB;
+                border: 1px solid $accent;
             }
 
             QPushButton {
@@ -207,26 +211,26 @@ class DocumentWidget(QWidget):
             }
 
             QPushButton#clearButton {
-                background-color: #F1F5F9;
-                color: #475569;
-                border: 1px solid #E2E8F0;
+                background-color: $subtle;
+                color: $secondary;
+                border: 1px solid $border;
             }
 
             QPushButton#clearButton:hover {
-                background-color: #E2E8F0;
+                background-color: $hover;
             }
 
             QPushButton#submitButton {
-                background-color: #2563EB;
-                color: white;
+                background-color: $primary;
+                color: $on_primary;
                 border: none;
             }
 
             QPushButton#submitButton:hover {
-                background-color: #1D4ED8;
+                background-color: $primary_hover;
             }
 
             QPushButton#submitButton:disabled {
-                background-color: #94A3B8;
+                background-color: $disabled;
             }
-        """)
+        """))

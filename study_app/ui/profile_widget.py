@@ -15,6 +15,8 @@ from PySide6.QtWidgets import (
     QPushButton,
 )
 
+from ui.theme import study_theme
+
 
 class ProfileWidget(QDialog):
     def __init__(self, parent=None):
@@ -27,6 +29,7 @@ class ProfileWidget(QDialog):
         self.profile_data = self.load_profile()
 
         self.setup_ui()
+        study_theme().changed.connect(self.apply_styles)
         self.apply_styles()
 
     def load_profile(self):
@@ -166,83 +169,83 @@ class ProfileWidget(QDialog):
         return str(value)
 
     def apply_styles(self):
-        self.setStyleSheet("""
+        self.setStyleSheet(study_theme().stylesheet("""
             QDialog {
-                background-color: #F8FAFC;
+                background-color: $page;
             }
 
             QLabel#profileTitle {
                 font-size: 24px;
                 font-weight: bold;
-                color: #0F172A;
+                color: $heading;
             }
 
             QLabel#profileSubtitle {
                 font-size: 13px;
-                color: #64748B;
+                color: $muted;
             }
 
             QLabel#profileDescription {
                 font-size: 13px;
-                color: #334155;
+                color: $body;
             }
 
             QTabWidget::pane {
-                border: 1px solid #E2E8F0;
-                background-color: white;
+                border: 1px solid $border;
+                background-color: $surface;
                 border-radius: 8px;
             }
 
             QTabBar::tab {
-                background-color: #E2E8F0;
-                color: #475569;
+                background-color: $hover;
+                color: $secondary;
                 padding: 10px 12px;
                 font-size: 12px;
             }
 
             QTabBar::tab:selected {
-                background-color: #2563EB;
-                color: white;
+                background-color: $primary;
+                color: $on_primary;
             }
 
             QWidget#tabContent {
-                background-color: white;
+                background-color: $surface;
             }
 
             QScrollArea {
-                background-color: white;
+                background-color: $surface;
                 border: none;
             }
 
             QFrame#profileRow {
-                background-color: #F8FAFC;
-                border: 1px solid #E2E8F0;
+                background-color: $page;
+                border: 1px solid $border;
                 border-radius: 8px;
             }
 
             QLabel#fieldLabel {
                 font-size: 12px;
                 font-weight: bold;
-                color: #64748B;
+                color: $muted;
                 background: transparent;
                 border: none;
             }
 
             QLabel#fieldValue {
                 font-size: 14px;
-                color: #1E293B;
+                color: $text;
                 background: transparent;
                 border: none;
             }
 
             QLabel#footerNote {
                 font-size: 12px;
-                color: #64748B;
+                color: $muted;
             }
 
             QPushButton#closeButton {
-                background-color: #2563EB;
-                color: white;
+                background-color: $primary;
+                color: $on_primary;
                 border: none;
                 border-radius: 7px;
                 padding: 10px 20px;
@@ -250,6 +253,6 @@ class ProfileWidget(QDialog):
             }
 
             QPushButton#closeButton:hover {
-                background-color: #1D4ED8;
+                background-color: $primary_hover;
             }
-        """)
+        """))

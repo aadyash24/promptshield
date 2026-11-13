@@ -3,18 +3,17 @@ from pathlib import Path
 
 from PySide6.QtWidgets import QApplication
 
-from PySide6.QtCore import Qt
 # Make the sibling ps package available when this file is run directly.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from ui.main_window import MainWindow
+from ui.theme import study_theme
 
 
 def main():
     app = QApplication(sys.argv)
 
-    # Force the light color scheme
-    app.styleHints().setColorScheme(Qt.ColorScheme.Light)
+    study_theme()
 
     window = MainWindow()
     app.aboutToQuit.connect(window.chat_panel.shutdown)

@@ -6,6 +6,8 @@ from PySide6.QtCore import QTimer, QUrl
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest
 from PySide6.QtWidgets import QLabel
 
+from ui.theme import study_theme
+
 
 class ServerStatus(QLabel):
     def __init__(self, detector_url, rewriter, parent=None):
@@ -20,6 +22,7 @@ class ServerStatus(QLabel):
         self.timer = QTimer(self)
         self.timer.setInterval(5000)
         self.timer.timeout.connect(self.check_services)
+        study_theme().changed.connect(self.update_indicator)
         self.update_indicator()
 
     def showEvent(self, event):
@@ -60,11 +63,12 @@ class ServerStatus(QLabel):
     def update_indicator(self):
         statuses = self.statuses.values()
         if "Unavailable" in statuses or "Invalid response" in statuses:
-            color, summary = "#B91C1C", "Services unavailable"
+            color, summary = "status_error", "Services unavailable"
         elif all(status == "Ready" for status in statuses):
-            color, summary = "#15803D", "Services ready"
+            color, summary = "status_ready", "Services ready"
         else:
-            color, summary = "#A16207", "Services checking or degraded"
+            color, summary = "status_pending", "Services checking or degraded"
+        color = study_theme().colors[color]
         self.setText(f'<span style="color:{color}">●</span> Services')
         self.setAccessibleName(summary)
         self.setToolTip("\n".join(

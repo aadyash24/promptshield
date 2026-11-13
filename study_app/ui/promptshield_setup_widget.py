@@ -11,6 +11,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout, QWidget,
 )
 
+from ui.theme import study_theme
+
 
 PS_ROOT = Path(__file__).resolve().parents[2] / "ps"
 COMPONENTS = {
@@ -101,15 +103,19 @@ class PromptShieldSetupWidget(QWidget):
         layout.addWidget(self.details)
         outer.addWidget(card, alignment=Qt.AlignHCenter)
         outer.addStretch()
-        self.setStyleSheet("""
-            QFrame#setupCard { background: white; border: 1px solid #CBD5E1; border-radius: 12px; }
-            QLabel { color: #334155; }
-            QLabel#setupTitle { color: #0F172A; font-size: 24px; font-weight: bold; }
-            QLabel#setupStatus { color: #115E59; font-weight: bold; }
+        study_theme().changed.connect(self.apply_styles)
+        self.apply_styles()
+
+    def apply_styles(self):
+        self.setStyleSheet(study_theme().stylesheet("""
+            QFrame#setupCard { background: $surface; border: 1px solid $control_border; border-radius: 12px; }
+            QLabel { color: $body; }
+            QLabel#setupTitle { color: $heading; font-size: 24px; font-weight: bold; }
+            QLabel#setupStatus { color: $teal_text; font-weight: bold; }
             QPushButton { padding: 7px 12px; }
-            QPushButton#setupAction { background: #0F766E; color: white; border-radius: 6px; }
-            QPushButton#setupAction:hover { background: #115E59; }
-        """)
+            QPushButton#setupAction { background: $teal; color: $on_primary; border-radius: 6px; }
+            QPushButton#setupAction:hover { background: $teal_hover; }
+        """))
 
     def start(self):
         for label in self.status_labels.values():

@@ -3,18 +3,18 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QWidget,
     QHBoxLayout,
-    QVBoxLayout,
-    QLabel,
     QSplitter,
-    QFrame,
+    QToolButton,
 )
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor, QIcon, QPainter, QPixmap
 
 from ui.task_widget import TaskWidget
 from ui.chat_widget import ChatWidget
 from ui.document_widget import DocumentWidget
 from ui.profile_widget import ProfileWidget
 from ui.server_status import ServerStatus
+from ui.theme import study_theme
 
 from study.tasks import TaskManager
 
@@ -66,7 +66,19 @@ class MainWindow(QMainWindow):
 
         # Center: AI chat
         self.chat_panel = ChatWidget()
-        self.statusBar().addPermanentWidget(ServerStatus(
+        status_bar = self.statusBar()
+        self.theme_button = QToolButton()
+        self.theme_button.setObjectName("themeToggle")
+        self.theme_button.setFixedSize(28, 28)
+        self.theme_button.setCursor(Qt.PointingHandCursor)
+        self.theme_button.setFocusPolicy(Qt.StrongFocus)
+        self.theme_button.setCheckable(True)
+        theme = study_theme()
+        self.theme_button.toggled.connect(theme.set_dark)
+        theme.changed.connect(self.update_theme_button)
+        self.update_theme_button()
+        status_bar.addWidget(self.theme_button)
+        status_bar.addPermanentWidget(ServerStatus(
             self.chat_panel.detector.base_url, self.chat_panel.rewriter,
         ))
 
@@ -88,7 +100,36 @@ class MainWindow(QMainWindow):
 
         main_layout.addWidget(self.splitter)
 
-        
+    def update_theme_button(self):
+        theme = study_theme()
+        label = "Switch to light mode" if theme.dark else "Switch to dark mode"
+        self.theme_button.setChecked(theme.dark)
+        self.theme_button.setAccessibleName(label)
+        self.theme_button.setToolTip(label)
+        self.theme_button.setStyleSheet(theme.stylesheet("""
+            QToolButton { background: transparent; border: 1px solid transparent; border-radius: 6px; }
+            QToolButton:hover { background: $hover; }
+            QToolButton:focus { border-color: $accent; }
+        """))
+        icon = QPixmap(18, 18)
+        icon.fill(Qt.transparent)
+        with QPainter(icon) as painter:
+            painter.setRenderHint(QPainter.Antialiasing)
+            color = QColor(theme.colors["body"])
+            if theme.dark:
+                painter.setPen(color)
+                painter.drawEllipse(6, 6, 6, 6)
+                for x, y in ((1, 0), (0, 1), (-1, 0), (0, -1),
+                             (1, 1), (-1, -1), (1, -1), (-1, 1)):
+                    painter.drawLine(9 + 5 * x, 9 + 5 * y, 9 + 7 * x, 9 + 7 * y)
+            else:
+                painter.setPen(Qt.NoPen)
+                painter.setBrush(color)
+                painter.drawEllipse(2, 3, 13, 13)
+                painter.setCompositionMode(QPainter.CompositionMode_Clear)
+                painter.drawEllipse(7, 0, 12, 12)
+        self.theme_button.setIcon(QIcon(icon))
+
     def show_profile(self):
         self.profile_window.show()
         self.profile_window.raise_()

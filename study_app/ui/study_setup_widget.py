@@ -5,6 +5,8 @@ from PySide6.QtWidgets import (
     QMessageBox, QSizePolicy,
 )
 
+from ui.theme import study_theme
+
 
 class StudySetupWidget(QWidget):
     """Researcher setup followed by participant-facing study information."""
@@ -18,6 +20,7 @@ class StudySetupWidget(QWidget):
         self.setObjectName("studySetup")
         self.setAttribute(Qt.WA_StyledBackground, True)
         self._build_ui()
+        study_theme().changed.connect(self._apply_styles)
         self._apply_styles()
 
     def _build_ui(self):
@@ -202,26 +205,26 @@ class StudySetupWidget(QWidget):
         self.window().close()
 
     def _apply_styles(self):
-        self.setStyleSheet("""
-            QWidget#studySetup { background: #F8FAFC; color: #1E293B; }
-            QFrame#setupCard { background: white; border: 1px solid #E2E8F0;
+        self.setStyleSheet(study_theme().stylesheet("""
+            QWidget#studySetup { background: $page; color: $text; }
+            QFrame#setupCard { background: $surface; border: 1px solid $border;
                                border-radius: 14px; }
             QFrame#setupCard QLabel { background: transparent; border: none; }
-            QLabel#setupHeading { font-size: 23px; font-weight: bold; color: #0F172A; }
-            QLabel#setupSubtitle { font-size: 13px; color: #64748B; }
-            QLabel#sectionHeading { font-size: 13px; font-weight: bold; color: #1D4ED8; }
-            QLabel#bodyText { font-size: 13px; color: #334155; }
-            QLabel#finePrint { font-size: 12px; color: #64748B; }
-            QScrollArea#disclosureScroll { border: 1px solid #E2E8F0;
-                                           border-radius: 8px; background: #FFFFFF; }
-            QLineEdit, QComboBox { background: #F8FAFC; border: 1px solid #CBD5E1;
-                                   border-radius: 7px; padding: 10px; color: #0F172A; }
-            QCheckBox { spacing: 10px; font-size: 13px; color: #334155; }
+            QLabel#setupHeading { font-size: 23px; font-weight: bold; color: $heading; }
+            QLabel#setupSubtitle { font-size: 13px; color: $muted; }
+            QLabel#sectionHeading { font-size: 13px; font-weight: bold; color: $accent_strong; }
+            QLabel#bodyText { font-size: 13px; color: $body; }
+            QLabel#finePrint { font-size: 12px; color: $muted; }
+            QScrollArea#disclosureScroll { border: 1px solid $border;
+                                           border-radius: 8px; background: $surface; }
+            QLineEdit, QComboBox { background: $page; border: 1px solid $control_border;
+                                   border-radius: 7px; padding: 10px; color: $heading; }
+            QCheckBox { spacing: 10px; font-size: 13px; color: $body; }
             QPushButton { padding: 12px 14px; border-radius: 7px;
                           font-size: 12px; font-weight: bold; }
-            QPushButton#primaryButton { background: #2563EB; color: white; border: none; }
-            QPushButton#primaryButton:hover { background: #1D4ED8; }
-            QPushButton#primaryButton:disabled { background: #CBD5E1; color: #64748B; }
-            QPushButton#secondaryButton { background: white; color: #475569;
-                                          border: 1px solid #CBD5E1; }
-        """)
+            QPushButton#primaryButton { background: $primary; color: $on_primary; border: none; }
+            QPushButton#primaryButton:hover { background: $primary_hover; }
+            QPushButton#primaryButton:disabled { background: $disabled_surface; color: $muted; }
+            QPushButton#secondaryButton { background: $surface; color: $secondary;
+                                          border: 1px solid $control_border; }
+        """))

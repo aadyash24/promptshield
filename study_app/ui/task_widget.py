@@ -9,6 +9,8 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, Signal
 
+from ui.theme import study_theme
+
 
 class TaskWidget(QWidget):
     profile_requested = Signal()
@@ -20,6 +22,7 @@ class TaskWidget(QWidget):
         self.setAttribute(Qt.WA_StyledBackground, True)
 
         self.setup_ui()
+        study_theme().changed.connect(self.apply_styles)
         self.apply_styles()
 
     def setup_ui(self):
@@ -158,19 +161,19 @@ class TaskWidget(QWidget):
         self.scroll_area.verticalScrollBar().setValue(0)
 
     def apply_styles(self):
-        self.setStyleSheet("""
+        self.setStyleSheet(study_theme().stylesheet("""
             QWidget#taskWidget {
-                background-color: #F8FAFC;
-                color: #1E293B;
+                background-color: $page;
+                color: $text;
             }
 
             QWidget#taskWidget QLabel {
                 background-color: transparent;
-                color: #1E293B;
+                color: $text;
             }
 
             QWidget#taskContent {
-                background-color: #F8FAFC;
+                background-color: $page;
             }
 
             QScrollArea {
@@ -181,23 +184,23 @@ class TaskWidget(QWidget):
             QLabel#sidebarTitle {
                 font-size: 20px;
                 font-weight: bold;
-                color: #1E293B;
+                color: $text;
             }
 
             QLabel#sidebarSubtitle {
                 font-size: 12px;
-                color: #64748B;
+                color: $muted;
             }
 
             QLabel#sectionTitle {
                 font-size: 15px;
                 font-weight: bold;
-                color: #1E293B;
+                color: $text;
             }
 
             QFrame#taskCard {
-                background-color: white;
-                border: 1px solid #E2E8F0;
+                background-color: $surface;
+                border: 1px solid $border;
                 border-radius: 10px;
             }
 
@@ -209,33 +212,33 @@ class TaskWidget(QWidget):
             QLabel#cardHeading {
                 font-size: 12px;
                 font-weight: bold;
-                color: #2563EB;
+                color: $accent;
             }
 
             QLabel#taskTitle {
                 font-size: 16px;
                 font-weight: bold;
-                color: #0F172A;
+                color: $heading;
             }
 
             QLabel#taskDescription {
                 font-size: 13px;
-                color: #334155;
+                color: $body;
             }
 
             QLabel#criterionLabel {
                 font-size: 13px;
-                color: #334155;
+                color: $body;
             }
 
             QLabel#instructionsLabel {
                 font-size: 12px;
-                color: #64748B;
+                color: $muted;
             }
 
             QPushButton#profileButton {
-                background-color: #2563EB;
-                color: white;
+                background-color: $primary;
+                color: $on_primary;
                 border: none;
                 border-radius: 7px;
                 padding: 12px;
@@ -244,6 +247,6 @@ class TaskWidget(QWidget):
             }
 
             QPushButton#profileButton:hover {
-                background-color: #1D4ED8;
+                background-color: $primary_hover;
             }
-        """)
+        """))
