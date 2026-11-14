@@ -22,7 +22,7 @@ class ProfileWidget(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.setWindowTitle("Maya Okafor - Character Profile")
+        self.setWindowTitle("Your Profile - Maya Okafor")
         self.resize(650, 700)
         self.setMinimumSize(450, 450)
 
@@ -53,7 +53,7 @@ class ProfileWidget(QDialog):
         layout.addWidget(title)
 
         subtitle = QLabel(
-            "Fictional Character Profile - Study Reference"
+            "Your profile for this task — you are Maya"
         )
         subtitle.setObjectName("profileSubtitle")
         layout.addWidget(subtitle)
@@ -70,11 +70,11 @@ class ProfileWidget(QDialog):
         self.tabs.setObjectName("profileTabs")
 
         sections = {
-            "personal": "Personal",
+            "housing": "Housing",
             "employment": "Employment",
             "financial": "Financial",
             "medical": "Medical",
-            "housing": "Housing",
+            "personal": "Personal",
         }
 
         for key, title in sections.items():
@@ -197,15 +197,23 @@ class ProfileWidget(QDialog):
             }
 
             QTabBar::tab {
-                background-color: $hover;
+                background-color: $subtle;
                 color: $secondary;
-                padding: 10px 12px;
-                font-size: 12px;
+                border: 1px solid $border;
+                border-top-left-radius: 7px;
+                border-top-right-radius: 7px;
+                margin-right: 4px;
+                padding: 9px 12px;
+                font-size: 13px;
             }
 
+            QTabBar::tab:hover { background-color: $hover; }
+            QTabBar::tab:focus { border-color: $accent; }
+
             QTabBar::tab:selected {
-                background-color: $primary;
-                color: $on_primary;
+                background-color: $surface;
+                color: $accent_strong;
+                border-bottom-color: $accent;
             }
 
             QWidget#tabContent {

@@ -50,10 +50,21 @@ def analyze_session(session):
     detections = get_events(
         session, "detection_completed"
     )
+    sent_ids = {
+        event.get("details", {}).get("message_id")
+        for event in get_events(session, "message_sent")
+    } - {None}
+    results = {}
+    for event in get_events(session, "message_detection_completed"):
+        details = event.get("details", {})
+        if details.get("message_id") in sent_ids:
+            results[details["message_id"]] = details
     checked_messages = [
-        event["details"] for event in get_events(session, "message_detection_completed")
-        if event.get("details", {}).get("status") == "ok"
+        details for details in results.values()
+        if details.get("status") == "ok" and isinstance(details.get("contains_pii"), bool)
     ]
+    sensitive_count = sum(details["contains_pii"] for details in checked_messages)
+    interaction_tracking = metadata.get("interaction_tracking", False)
 
     positive_checks = [
         event for event in detections
@@ -71,13 +82,16 @@ def analyze_session(session):
             categories[category] += 1
 
     duration_ms = get_duration_ms(session)
+    surveys = get_events(session, "post_study_survey")
+    survey = surveys[-1].get("details", {}) if surveys else {}
+    survey_status = survey.get("status") or (
+        "abandoned" if counts["post_study_survey_abandoned"] else
+        "pending" if counts["post_study_survey_shown"] else "not_presented"
+    )
 
     warning_exposures = (
         counts["warning_displayed"]
-        if any(
-            event.get("event_type") == "warning_displayed"
-            for event in events
-        )
+        if interaction_tracking or counts["warning_displayed"]
         else None
     )
 
@@ -89,6 +103,10 @@ def analyze_session(session):
             "status", "unknown"
         ),
         "task_id": metadata.get("task_id"),
+        "survey_status": survey_status,
+        "survey_version": survey.get("survey_version", metadata.get("survey_version")),
+        "survey_answered_count": survey.get("answered_count"),
+        "survey_responses": survey.get("responses", []),
         "completed": counts["document_submitted"] > 0,
         "duration_seconds": (
             round(duration_ms / 1000, 2)
@@ -97,24 +115,33 @@ def analyze_session(session):
         ),
         "messages_sent": counts["message_sent"],
         "messages_checked": len(checked_messages),
-        "sensitive_messages_sent": (
-            sum(details["contains_pii"] is True for details in checked_messages)
-            if checked_messages else None
-        ),
+        "messages_unchecked": counts["message_sent"] - len(checked_messages),
+        "sent_detection_failures": sum(d.get("status") == "failed" for d in results.values()),
+        "sent_detection_interruptions": sum(d.get("status") == "interrupted" for d in results.values()),
+        "sensitive_messages_sent": sensitive_count if checked_messages else None,
+        "sensitive_message_rate": sensitive_count / len(checked_messages) if checked_messages else None,
+        "sent_categories": dict(Counter(
+            category for details in checked_messages for category in details.get("categories", [])
+        )),
         "detection_checks": len(detections),
         "positive_checks": len(positive_checks),
         "warning_exposures": warning_exposures,
         "warning_hovers": count_warning_hovers(metadata, counts),
         "rewrites_requested": (
             counts["rewrite_requested"]
-            if "rewrite_requested" in counts
+            if interaction_tracking or counts["rewrite_requested"]
             else None
         ),
         "rewrites_accepted": (
             counts["rewrite_accepted"]
-            if "rewrite_accepted" in counts
+            if interaction_tracking or counts["rewrite_accepted"]
             else None
         ),
+        "rewrites_failed": counts["rewrite_failed"] if interaction_tracking else None,
+        "rewrite_fallbacks": counts["rewrite_fallback_applied"] if interaction_tracking else None,
+        "rewrite_fallbacks_undone": counts["rewrite_fallback_undone"] if interaction_tracking else None,
+        "rewrites_discarded": counts["rewrite_discarded"] if interaction_tracking else None,
+        "chat_reply_failures": counts["chat_reply_failed"] if interaction_tracking else None,
         "categories": dict(categories),
         "detector_modes": sorted(
             {event.get("details", {}).get("mode", "unknown") for event in detections}
@@ -174,11 +201,16 @@ def summarize_condition(records):
         ),
         "duration_seconds": stats("duration_seconds"),
         "messages_sent": stats("messages_sent"),
+        "messages_checked": stats("messages_checked"),
+        "messages_unchecked": stats("messages_unchecked"),
+        "sensitive_message_rate": stats("sensitive_message_rate"),
         "detection_checks": stats("detection_checks"),
         "positive_checks": stats("positive_checks"),
         "warning_exposures": stats("warning_exposures"),
         "warning_hovers": stats("warning_hovers"),
         "rewrites_accepted": stats("rewrites_accepted"),
+        "rewrite_fallbacks": stats("rewrite_fallbacks"),
+        "rewrite_fallbacks_undone": stats("rewrite_fallbacks_undone"),
         "unnecessary_disclosures": stats(
             "unnecessary_disclosures"
         ),

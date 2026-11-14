@@ -1,4 +1,7 @@
 
+import re
+
+
 def locate_findings(message, findings):
     """
     Match detector findings to character ranges in a message.
@@ -27,16 +30,23 @@ def locate_findings(message, findings):
         if not detected_text:
             continue
 
-        search_start = 0
+        start, end = finding.get("start"), finding.get("end")
+        if "start" in finding or "end" in finding:
+            if (type(start) is not int or type(end) is not int
+                    or not 0 <= start < end <= len(message)
+                    or message[start:end] != detected_text):
+                continue
+            ranges = [(start, end)]
+        else:
+            # Older detectors return text only. Avoid matches inside larger words.
+            pattern = re.escape(detected_text)
+            if detected_text[0].isalnum():
+                pattern = r"(?<!\w)" + pattern
+            if detected_text[-1].isalnum():
+                pattern += r"(?!\w)"
+            ranges = (match.span() for match in re.finditer(pattern, message))
 
-        while True:
-            start = message.find(detected_text, search_start)
-
-            if start == -1:
-                break
-
-            end = start + len(detected_text)
-
+        for start, end in ranges:
             key = (
                 start,
                 end,
@@ -54,8 +64,6 @@ def locate_findings(message, findings):
                     "tier": finding.get("tier", 1)
                 })
                 seen.add(key)
-
-            search_start = end
 
     return sorted(
         spans,

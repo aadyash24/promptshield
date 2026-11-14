@@ -2,7 +2,7 @@
 from PySide6.QtWidgets import (
     QMainWindow,
     QWidget,
-    QHBoxLayout,
+    QVBoxLayout,
     QSplitter,
     QToolButton,
 )
@@ -40,22 +40,25 @@ class MainWindow(QMainWindow):
     def setup_ui(self):
         # Central widget
         central_widget = QWidget()
+        central_widget.setObjectName("studyWorkspace")
         self.setCentralWidget(central_widget)
 
-        main_layout = QHBoxLayout(central_widget)
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.setSpacing(0)
+        main_layout = QVBoxLayout(central_widget)
+        main_layout.setContentsMargins(16, 16, 16, 12)
+        main_layout.setSpacing(12)
 
         # Main horizontal splitter
         self.splitter = QSplitter(Qt.Horizontal)
+        self.splitter.setObjectName("workspaceSplitter")
+        self.splitter.setHandleWidth(12)
 
-        # Left: task instructions
         self.task_panel = TaskWidget()
         self.task_panel.set_task(
             self.task_manager.current_task,
             self.task_manager.task_number,
             self.task_manager.task_count
         )
+        main_layout.addWidget(self.task_panel)
 
         # Right: letter editor
         self.document_panel = DocumentWidget()
@@ -64,7 +67,7 @@ class MainWindow(QMainWindow):
             self.on_document_submitted
         )
 
-        # Center: AI chat
+        # Left: AI chat
         self.chat_panel = ChatWidget()
         status_bar = self.statusBar()
         self.theme_button = QToolButton()
@@ -82,26 +85,29 @@ class MainWindow(QMainWindow):
             self.chat_panel.detector.base_url, self.chat_panel.rewriter,
         ))
 
-        self.splitter.addWidget(self.task_panel)
         self.splitter.addWidget(self.chat_panel)
         self.splitter.addWidget(self.document_panel)
 
-        # Initial widths for the task, chat, and letter editor.
-        self.splitter.setSizes([375, 525, 600])
+        self.splitter.setSizes([700, 800])
+        self.splitter.setChildrenCollapsible(False)
 
         # Allow all panels to resize
-        for i in range(3):
+        for i in range(2):
             self.splitter.setStretchFactor(i, 1)
 
         # Minimum panel widths
-        self.task_panel.setMinimumWidth(260)
         self.document_panel.setMinimumWidth(350)
         self.chat_panel.setMinimumWidth(350)
 
-        main_layout.addWidget(self.splitter)
+        main_layout.addWidget(self.splitter, 1)
 
     def update_theme_button(self):
         theme = study_theme()
+        self.centralWidget().setStyleSheet(theme.stylesheet("""
+            QWidget#studyWorkspace { background: $page; }
+            QSplitter#workspaceSplitter::handle { background: transparent; }
+            QSplitter#workspaceSplitter::handle:hover { background: $control_border; }
+        """))
         label = "Switch to light mode" if theme.dark else "Switch to dark mode"
         self.theme_button.setChecked(theme.dark)
         self.theme_button.setAccessibleName(label)

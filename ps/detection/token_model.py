@@ -146,8 +146,9 @@ class TokenDetector:
         seen = [set() for _ in prompts]
         for (pi, off), found in zip(owner, per):
             for f in found:
-                key = (f["start"] + off, f["text"], f["category"])
+                start, end = f["start"] + off, f["end"] + off
+                key = (start, end, f["category"])
                 if key not in seen[pi]:
                     seen[pi].add(key)
-                    out[pi].append({"text": f["text"], "category": f["category"], "tier": f["tier"]})
+                    out[pi].append({**f, "start": start, "end": end})
         return out

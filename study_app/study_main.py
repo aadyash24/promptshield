@@ -15,6 +15,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from ui.main_window import MainWindow
 from ui.promptshield_setup_widget import PromptShieldSetupWidget
+from ui.study_complete_widget import StudyCompleteWidget
+from ui.study_survey_widget import StudySurveyWidget
+from study.survey import SURVEY_VERSION
 from ui.study_setup_widget import StudySetupWidget
 from ui.theme import study_theme
 from services.session_logger import create_logger
@@ -33,14 +36,37 @@ def main():
     window.addWidget(installation)
     setup = StudySetupWidget()
     window.addWidget(setup)
+    completion = StudyCompleteWidget()
+    completion.close_requested.connect(window.close)
+    window.addWidget(completion)
+    survey = StudySurveyWidget()
+    window.addWidget(survey)
 
     session = {
         "logger": None,
         "study": None,
         "completed": False,
         "message_count": 0,
+        "survey_finished": False,
     }
     ollama_model = ""
+
+    def finish_survey(answers, status="submitted"):
+        if session["survey_finished"]:
+            return
+        try:
+            session["logger"].log_survey(answers, status=status)
+        except (OSError, ValueError):
+            survey.save_failed()
+            return
+        session["survey_finished"] = True
+        survey.clear_responses()
+        window.setCurrentWidget(completion)
+        window.setWindowTitle("PromptShield — Study Complete")
+        completion.close_button.setFocus()
+
+    survey.submitted.connect(finish_survey)
+    survey.skipped.connect(lambda: finish_survey({}, status="skipped"))
 
     def configure_models(study):
         chat = study.chat_panel
@@ -50,6 +76,8 @@ def main():
 
     def services_ready(model):
         nonlocal ollama_model
+        if session["completed"]:
+            return
         ollama_model = model
         study = session["study"]
         if study is not None:
@@ -66,8 +94,10 @@ def main():
             participant_id=participant_id,
             condition=condition,
             task_id="hardship_01",
-            app_version="prototype-v1",
+            app_version="prototype-v3",
             warning_hover_tracking=True,
+            interaction_tracking=True,
+            survey_enabled=True,
         )
 
         study = MainWindow()
@@ -97,12 +127,12 @@ def main():
         if condition != "dev":
             logger.log_event(
                 "consent_accepted",
-                consent_version="draft_1",
+                consent_version="draft_3_survey_text",
             )
 
         logger.log_event(
             "task_started",
-            task_version="hardship_01",
+            task_version="hardship_02",
             chat_model=study.chat_panel.chat_backend.model,
         )
 
@@ -129,6 +159,9 @@ def main():
         study.chat_panel.detection_completed.connect(
             on_detection_completed
         )
+        study.chat_panel.study_event.connect(
+            lambda event_type, details: logger.log_event(event_type, **details)
+        )
         study.chat_panel.message_input.warning_hover_event.connect(
             lambda event_type, details: logger.log_event(event_type, **details)
         )
@@ -137,18 +170,19 @@ def main():
         # User messages
         # ---------------------------------------------
 
-        def on_message_sent(message):
+        def on_message_sent(message, context):
             session["message_count"] += 1
 
             logger.log_message(
                 message_id=session["message_count"],
                 character_count=len(message),
                 word_count=len(message.split()),
+                **context,
             )
             if logger.enabled:
                 study.chat_panel.check_sent_message(session["message_count"], message)
 
-        study.chat_panel.message_submitted.connect(
+        study.chat_panel.study_message_submitted.connect(
             on_message_sent
         )
         study.chat_panel.sent_detection_completed.connect(
@@ -181,6 +215,11 @@ def main():
                 word_count=len(document.split()),
                 message_count=session["message_count"],
             )
+            survey.set_condition(condition)
+            logger.log_event("post_study_survey_shown", survey_version=SURVEY_VERSION)
+            window.setCurrentWidget(survey)
+            window.setWindowTitle("PromptShield — Post-study Survey")
+            next(iter(survey.fields.values())).setFocus()
 
         study.document_panel.document_submitted.connect(
             on_document_submitted
@@ -210,10 +249,16 @@ def main():
         )
 
         session["study"].chat_panel.shutdown()
+        if session["completed"] and not session["survey_finished"]:
+            logger.log_event("post_study_survey_abandoned", survey_version=SURVEY_VERSION)
         logger.close(status=status)
 
     setup.study_started.connect(start_study)
-    installation.service_lost.connect(lambda: window.setCurrentWidget(installation))
+    def on_service_lost():
+        if not session["completed"]:
+            window.setCurrentWidget(installation)
+
+    installation.service_lost.connect(on_service_lost)
     app.aboutToQuit.connect(close_session)
     app.aboutToQuit.connect(installation.shutdown)
 

@@ -98,13 +98,15 @@ class StudyOverviewWindow(QMainWindow):
         splitter.addWidget(self.canvas)
 
         self.table = QTableWidget()
-        self.table.setColumnCount(8)
+        self.table.setColumnCount(10)
         self.table.setHorizontalHeaderLabels([
             "Participant",
             "Condition",
             "Status",
             "Duration (s)",
             "Messages",
+            "Sent Checked",
+            "Sent Flagged",
             "Checks",
             "Positive Checks",
             "Warnings",
@@ -169,6 +171,10 @@ class StudyOverviewWindow(QMainWindow):
                 else "N/A"
             )
 
+        def disclosure_rate(group):
+            value = group["sensitive_message_rate"]["mean"]
+            return f"{value:.1%}" if value is not None else "N/A"
+
         self.summary_label.setText(
             f"Sessions: {summary['total_sessions']}    "
             f"Unique participant IDs: "
@@ -180,8 +186,8 @@ class StudyOverviewWindow(QMainWindow):
             f"Mean completion time: "
             f"Active {mean_text(active, 'duration_seconds')}s | "
             f"Silent {mean_text(silent, 'duration_seconds')}s\n"
-            "Note: Detection checks are not unique warnings "
-            "or confirmed disclosures."
+            "Mean participant share of checked messages flagged: "
+            f"Active {disclosure_rate(active)} | Silent {disclosure_rate(silent)}"
         )
 
         self.update_table()
@@ -199,6 +205,8 @@ class StudyOverviewWindow(QMainWindow):
                 record.get("status"),
                 record.get("duration_seconds"),
                 record.get("messages_sent"),
+                record.get("messages_checked"),
+                record.get("sensitive_messages_sent"),
                 record.get("detection_checks"),
                 record.get("positive_checks"),
                 record.get("warning_exposures"),

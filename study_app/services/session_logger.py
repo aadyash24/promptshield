@@ -5,10 +5,12 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+from study.survey import MAX_RESPONSE_CHARS, SURVEY_VERSION, questions_for
+
 
 SCHEMA_VERSION = 1
 
-# Event metadata only. Never allow raw participant text.
+# General events remain metadata-only; survey text has a dedicated validated path.
 FORBIDDEN_FIELDS = {
     "text",
     "raw_text",
@@ -21,6 +23,7 @@ FORBIDDEN_FIELDS = {
     "email",
     "phone",
     "account_number",
+    "response_text",
 }
 
 
@@ -58,12 +61,15 @@ class NullLogger:
     def log_message(self, **details):
         return None
 
+    def log_survey(self, answers, status="submitted"):
+        return None
+
     def close(self, status="completed"):
         return None
 
 
 class SessionLogger:
-    """Metadata-only logging for participant sessions."""
+    """Interaction metadata with opt-in, explicitly submitted survey responses."""
 
     enabled = True
 
@@ -75,6 +81,8 @@ class SessionLogger:
         app_version="prototype",
         data_dir=None,
         warning_hover_tracking=False,
+        interaction_tracking=False,
+        survey_enabled=False,
     ):
         if condition not in ("active", "silent"):
             raise ValueError(
@@ -96,6 +104,8 @@ class SessionLogger:
         self.started_utc = utc_now()
         self.sequence = 0
         self.closed = False
+        self.survey_enabled = survey_enabled
+        self.survey_recorded = False
 
         root = (
             Path(data_dir)
@@ -124,10 +134,14 @@ class SessionLogger:
             "app_version": app_version,
             "started_at_utc": self.started_utc,
             "status": "in_progress",
-            "logging_policy": "metadata_only",
+            "logging_policy": "metadata_and_post_study_survey" if survey_enabled else "metadata_only",
         }
         if warning_hover_tracking:
             self.metadata["warning_hover_tracking"] = True
+        if interaction_tracking:
+            self.metadata["interaction_tracking"] = True
+        if survey_enabled:
+            self.metadata["survey_version"] = SURVEY_VERSION
 
         self._save_metadata()
         self.log_event("session_started")
@@ -159,6 +173,10 @@ class SessionLogger:
 
         validate_metadata(details)
 
+        return self._write_event(event_type, details)
+
+    def _write_event(self, event_type, details):
+
         self.sequence += 1
 
         record = {
@@ -185,6 +203,39 @@ class SessionLogger:
             file.write(serialized + "\n")
 
         return self.sequence
+
+    def log_survey(self, answers, status="submitted"):
+        """Save only the defined survey fields, once, after explicit submission."""
+        if self.closed:
+            raise ValueError("Session is closed.")
+        if not self.survey_enabled:
+            raise ValueError("Survey collection was not enabled for this session.")
+        if self.survey_recorded:
+            raise ValueError("Survey already recorded.")
+        if status not in ("submitted", "skipped") or not isinstance(answers, dict):
+            raise ValueError("Invalid survey submission.")
+        questions = questions_for(self.condition)
+        expected = {key for key, _ in questions}
+        if status == "skipped":
+            if answers:
+                raise ValueError("Skipped surveys must not contain answers.")
+        elif set(answers) != expected:
+            raise ValueError("Survey question IDs do not match this condition.")
+        if any(not isinstance(value, str) or len(value) > MAX_RESPONSE_CHARS for value in answers.values()):
+            raise ValueError("Invalid survey response length or type.")
+        responses = [
+            {"question_id": key, "question": question,
+             "response_text": answers.get(key, "").strip() or None}
+            for key, question in questions
+        ]
+        result = self._write_event("post_study_survey", {
+            "survey_version": SURVEY_VERSION,
+            "status": status,
+            "answered_count": sum(item["response_text"] is not None for item in responses),
+            "responses": responses,
+        })
+        self.survey_recorded = True
+        return result
 
     def log_message(self, **details):
         return self.log_event(

@@ -1,4 +1,3 @@
-
 {
   "tasks": [
     {
@@ -8,9 +7,9 @@
       "character": {
         "name": "Maya Okafor",
         "age": 28,
-        "description": "Maya is a graphic designer who has experienced temporary financial difficulties following an unexpected medical procedure."
+        "description": "You are Maya Okafor, a 28-year-old graphic designer living at Cedar Grove Apartments. Following an unexpected medical procedure and missed work, you are experiencing temporary financial difficulty."
       },
-      "objective": "You are acting as Maya Okafor, a tenant facing temporary financial difficulties after a medical procedure. Use the AI assistant and letter editor to prepare a professional, persuasive request for a temporary rent payment arrangement. Explain Maya's circumstances, propose a realistic repayment plan, and use any relevant information from her fictional case file. Your goal is to produce the strongest possible letter. You do not need to include every available detail."
+      "objective": "You are Maya Okafor, a tenant at Cedar Grove Apartments. An unexpected medical procedure left you with extra expenses and caused you to miss work. You are back on your regular schedule, but cannot pay all of your overdue November rent immediately. Your property manager, Jordan Ellis, will consider a written explanation and a realistic payment proposal.\n\nReview your provided profile, then use the AI assistant to work out a payment arrangement and prepare your letter to Jordan. Write and interact with the assistant as Maya, using first person (I, me, my). Decide what information about your situation to share with the assistant and what belongs in your letter. Check the amounts, dates, and tone before submitting your finished letter in the editor."
     }
   ]
 }

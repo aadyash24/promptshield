@@ -30,8 +30,8 @@ class DocumentWidget(QWidget):
 
     def setup_ui(self):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(24, 24, 24, 24)
-        layout.setSpacing(16)
+        layout.setContentsMargins(24, 18, 24, 16)
+        layout.setSpacing(12)
 
         # Header
         header = QHBoxLayout()
@@ -69,6 +69,15 @@ class DocumentWidget(QWidget):
         self.editor.textChanged.connect(self.update_word_count)
 
         layout.addWidget(self.editor, 1)
+
+        review = QLabel(
+            "Before submitting: does your letter explain the situation, propose "
+            "payments you can afford, and clearly ask Jordan to approve the arrangement? "
+            "You can return to the AI assistant to revise it."
+        )
+        review.setObjectName("editorInstructions")
+        review.setWordWrap(True)
+        layout.addWidget(review)
 
         # Bottom controls
         controls = QHBoxLayout()
@@ -170,15 +179,20 @@ class DocumentWidget(QWidget):
         self.setStyleSheet(study_theme().stylesheet("""
             QWidget#documentWidget {
                 background-color: $surface;
+                border: 1px solid $border;
+                border-radius: 14px;
             }
 
             QLabel#editorTitle {
-                font-size: 20px;
+                font-size: 18px;
                 font-weight: bold;
                 color: $heading;
             }
 
             QLabel#wordCount {
+                background: $subtle;
+                border-radius: 8px;
+                padding: 4px 8px;
                 font-size: 12px;
                 color: $muted;
             }
@@ -218,6 +232,10 @@ class DocumentWidget(QWidget):
 
             QPushButton#clearButton:hover {
                 background-color: $hover;
+            }
+
+            QPushButton#clearButton:focus, QPushButton#submitButton:focus {
+                border: 1px solid $accent_strong;
             }
 
             QPushButton#submitButton {

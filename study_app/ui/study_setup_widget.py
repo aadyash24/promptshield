@@ -109,7 +109,7 @@ class StudySetupWidget(QWidget):
         disclosure_layout.setSpacing(12)
 
         sections = [
-            ("What you will do", "You will use an AI assistant and a document editor to write a letter for a fictional character. You may review the character's provided case materials and decide which details to use."),
+            ("What you will do", "For this task, you are Maya Okafor. Take on her role and use the AI assistant to plan and write your letter to your property manager. Speak to the assistant and write the letter in first person, as Maya. Open Your Profile (Maya) to review your situation, use the chat to plan and draft, and finish your letter in the editor. You can move between these at any time. After submitting your letter, you will see a short typed survey about your experience and the information you chose to send. Each question is optional, and you can skip the survey."),
             ("Privacy feedback", "The application may examine text as you type to identify potentially sensitive information. Some participants may see visual privacy guidance, and others may not. This does not prevent you from completing the task."),
             ("Information used", "The case details are fictional. Do not enter your own real personal, medical, or financial information, or information about other real people."),
             (
@@ -117,8 +117,13 @@ class StudySetupWidget(QWidget):
                 "The study application records interaction timestamps, "
                 "privacy detection categories and severity levels, "
                 "warning interactions, and task completion information. "
-                "The research event logger is designed not to store the "
-                "text you type. Ask the researcher about data storage, "
+                "The research event logger does not save your chat messages, AI replies, "
+                "or final letter text. It DOES save the full text of post-study survey "
+                "answers you submit, linked to your participant ID, study condition, "
+                "and session events. Unsubmitted survey drafts are not saved. "
+                "Survey answers are stored locally in the session log and are not sent "
+                "to the AI assistant. Do not include real personal information in your answers. "
+                "Ask the researcher about data storage, "
                 "access, retention, other application components, and "
                 "any external AI service before consenting."
             ),
@@ -207,7 +212,7 @@ class StudySetupWidget(QWidget):
     def _apply_styles(self):
         self.setStyleSheet(study_theme().stylesheet("""
             QWidget#studySetup { background: $page; color: $text; }
-            QFrame#setupCard { background: $surface; border: 1px solid $border;
+            QFrame#setupCard { background: $surface; border: 1px solid $border; border-top: 4px solid $brand;
                                border-radius: 14px; }
             QFrame#setupCard QLabel { background: transparent; border: none; }
             QLabel#setupHeading { font-size: 23px; font-weight: bold; color: $heading; }
@@ -219,6 +224,7 @@ class StudySetupWidget(QWidget):
                                            border-radius: 8px; background: $surface; }
             QLineEdit, QComboBox { background: $page; border: 1px solid $control_border;
                                    border-radius: 7px; padding: 10px; color: $heading; }
+            QLineEdit:focus, QComboBox:focus { border-color: $accent; }
             QCheckBox { spacing: 10px; font-size: 13px; color: $body; }
             QPushButton { padding: 12px 14px; border-radius: 7px;
                           font-size: 12px; font-weight: bold; }
@@ -227,4 +233,6 @@ class StudySetupWidget(QWidget):
             QPushButton#primaryButton:disabled { background: $disabled_surface; color: $muted; }
             QPushButton#secondaryButton { background: $surface; color: $secondary;
                                           border: 1px solid $control_border; }
+            QPushButton#secondaryButton:hover { background: $hover; }
+            QPushButton:focus { border: 1px solid $accent_strong; }
         """))

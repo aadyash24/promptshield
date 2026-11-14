@@ -108,13 +108,14 @@ class PromptShieldSetupWidget(QWidget):
 
     def apply_styles(self):
         self.setStyleSheet(study_theme().stylesheet("""
-            QFrame#setupCard { background: $surface; border: 1px solid $control_border; border-radius: 12px; }
+            QFrame#setupCard { background: $surface; border: 1px solid $border; border-top: 4px solid $brand; border-radius: 14px; }
             QLabel { color: $body; }
             QLabel#setupTitle { color: $heading; font-size: 24px; font-weight: bold; }
             QLabel#setupStatus { color: $teal_text; font-weight: bold; }
             QPushButton { padding: 7px 12px; }
-            QPushButton#setupAction { background: $teal; color: $on_primary; border-radius: 6px; }
-            QPushButton#setupAction:hover { background: $teal_hover; }
+            QPushButton#setupAction { background: $primary; color: $on_primary; border-radius: 7px; }
+            QPushButton#setupAction:hover { background: $primary_hover; }
+            QPushButton#setupAction:focus { border: 1px solid $accent_strong; }
         """))
 
     def start(self):

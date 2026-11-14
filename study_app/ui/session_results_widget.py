@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QFileDialog,
     QMessageBox,
+    QTabWidget,
 )
 
 from matplotlib.backends.backend_qtagg import (
@@ -39,6 +40,7 @@ from analytics.session_data import (
     available_event_types,
     filter_events,
 )
+from analytics.study_analysis import analyze_session
 
 
 EVENT_COLORS = {
@@ -240,7 +242,23 @@ class SessionResultsWindow(QMainWindow):
         # -------------------------------------------------
 
         workspace = QSplitter(Qt.Vertical)
-        content_layout.addWidget(workspace, 1)
+        self.results_tabs = QTabWidget()
+        self.results_tabs.addTab(workspace, "Events & Charts")
+        survey_panel = QWidget()
+        survey_layout = QVBoxLayout(survey_panel)
+        survey_layout.setContentsMargins(14, 14, 14, 14)
+        self.survey_status = QLabel("Select a session to view survey results.")
+        self.survey_status.setWordWrap(True)
+        self.survey_status.setTextFormat(Qt.PlainText)
+        self.survey_status.setObjectName("sectionTitle")
+        survey_layout.addWidget(self.survey_status)
+        self.survey_responses = QPlainTextEdit()
+        self.survey_responses.setReadOnly(True)
+        self.survey_responses.setAccessibleName("Post-study survey questions and responses")
+        self.survey_responses.setPlaceholderText("Select a session to view its post-study survey.")
+        survey_layout.addWidget(self.survey_responses, 1)
+        self.results_tabs.addTab(survey_panel, "Survey Results")
+        content_layout.addWidget(self.results_tabs, 1)
 
         chart_panel = QWidget()
         chart_layout = QVBoxLayout(chart_panel)
@@ -405,6 +423,12 @@ class SessionResultsWindow(QMainWindow):
             self.refresh_sessions()
 
     def refresh_sessions(self):
+        selected_row = self.session_list.currentRow()
+        selected_folder = (
+            self.session_folders[selected_row]
+            if hasattr(self, "session_folders") and 0 <= selected_row < len(self.session_folders)
+            else None
+        )
         self.session_folders = discover_sessions(
             self.sessions_dir
         )
@@ -424,7 +448,10 @@ class SessionResultsWindow(QMainWindow):
         self.session_list.blockSignals(False)
 
         if self.session_folders:
-            self.session_list.setCurrentRow(0)
+            self.session_list.setCurrentRow(
+                self.session_folders.index(selected_folder)
+                if selected_folder in self.session_folders else 0
+            )
         else:
             self.current_session = None
             self.clear_display()
@@ -477,6 +504,7 @@ class SessionResultsWindow(QMainWindow):
             )
 
         self.update_metrics()
+        self.update_survey_results()
 
         # Automatically discover event types.
         self.event_filter.blockSignals(True)
@@ -513,6 +541,8 @@ class SessionResultsWindow(QMainWindow):
         self.timeline_rows.clear()
         self.event_table.setRowCount(0)
         self.details_view.clear()
+        self.survey_status.setText("No session selected")
+        self.survey_responses.clear()
 
         self.figure.clear()
         self.canvas.draw_idle()
@@ -520,6 +550,42 @@ class SessionResultsWindow(QMainWindow):
     # -----------------------------------------------------
     # Summary metrics
     # -----------------------------------------------------
+
+    def update_survey_results(self):
+        """Readable survey responses, independent of the event filters."""
+        record = analyze_session(self.current_session)
+        status = record["survey_status"]
+        statuses = {
+            "submitted": "Submitted",
+            "skipped": "Skipped by participant",
+            "abandoned": "Closed without submitting the survey",
+            "pending": "Survey opened — no submission recorded",
+            "not_presented": "No survey recorded for this session",
+        }
+        summary = statuses.get(status, str(status))
+        if record["survey_version"]:
+            summary += f"  |  Version: {record['survey_version']}"
+        responses = record["survey_responses"]
+        if status == "submitted":
+            summary += f"  |  Answered: {record['survey_answered_count']} of {len(responses)}"
+        self.survey_status.setText(summary)
+        if status != "submitted":
+            self.survey_responses.setPlainText({
+                "skipped": "The participant skipped the survey. No typed answers were saved.",
+                "abandoned": "The session ended before survey submission. Unsubmitted answers were not saved.",
+                "pending": "No submitted answers are available. Refresh Sessions after the participant submits the survey.",
+                "not_presented": "This session has no post-study survey events. It may predate the survey or have ended before the survey was shown.",
+            }.get(status, "No submitted survey responses are available."))
+            return
+        blocks = []
+        for index, response in enumerate(responses, 1):
+            question = response.get("question") or response.get("question_id", "Question")
+            answer = response.get("response_text")
+            blocks.append(f"{index}. {question}\n\n{answer if answer else '[No response provided]'}")
+        separator = "\n\n" + "─" * 48 + "\n\n"
+        self.survey_responses.setPlainText(
+            separator.join(blocks) if blocks else "No responses were included in this submission."
+        )
 
     def update_metrics(self):
         if self.current_session is None:
@@ -836,6 +902,10 @@ class SessionResultsWindow(QMainWindow):
             QMainWindow {
                 background-color: #F8FAFC;
             }
+
+            QTabWidget::pane { border: 1px solid #CBD5E1; background: white; border-radius: 6px; }
+            QTabBar::tab { background: #F1F5F9; padding: 9px 18px; margin-right: 4px; color: #475569; }
+            QTabBar::tab:selected { background: white; color: #1E293B; border-top: 3px solid #FF8200; }
 
             QWidget {
                 color: #1E293B;

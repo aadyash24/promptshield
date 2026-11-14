@@ -1,13 +1,5 @@
-
-from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QLabel,
-    QFrame,
-    QPushButton,
-    QScrollArea,
-)
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from ui.theme import study_theme
 
@@ -17,236 +9,80 @@ class TaskWidget(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-
         self.setObjectName("taskWidget")
         self.setAttribute(Qt.WA_StyledBackground, True)
 
-        self.setup_ui()
-        study_theme().changed.connect(self.apply_styles)
-        self.apply_styles()
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 12, 24, 12)
+        layout.setSpacing(8)
 
-    def setup_ui(self):
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(24, 24, 24, 24)
-        main_layout.setSpacing(20)
-
-        # Header
-        title = QLabel("PromptShield User Study")
-        title.setObjectName("sidebarTitle")
-        title.setWordWrap(True)
-
-        subtitle = QLabel("AI-Assisted Writing Exercise")
-        subtitle.setObjectName("sidebarSubtitle")
-
-        main_layout.addWidget(title)
-        main_layout.addWidget(subtitle)
-
-        # Scrollable content
-        self.scroll_area = QScrollArea()
-        self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setFrameShape(QFrame.NoFrame)
-        self.scroll_area.setHorizontalScrollBarPolicy(
-            Qt.ScrollBarAlwaysOff
-        )
-
-        content = QWidget()
-        content.setObjectName("taskContent")
-
-        content_layout = QVBoxLayout(content)
-        content_layout.setContentsMargins(0, 0, 8, 0)
-        content_layout.setSpacing(20)
-
-        # Task card
-        task_card = QFrame()
-        task_card.setObjectName("taskCard")
-
-        task_layout = QVBoxLayout(task_card)
-        task_layout.setContentsMargins(16, 16, 16, 16)
-        task_layout.setSpacing(12)
-
-        heading = QLabel("YOUR ASSIGNMENT")
-        heading.setObjectName("cardHeading")
-
-        self.task_title = QLabel("Financial Hardship Request")
+        header = QHBoxLayout()
+        self.task_title = QLabel()
         self.task_title.setObjectName("taskTitle")
         self.task_title.setWordWrap(True)
+        self.task_title.setTextFormat(Qt.PlainText)
+        header.addWidget(self.task_title, 1)
+
+        self.details_button = QPushButton()
+        self.details_button.setCheckable(True)
+        self.details_button.toggled.connect(self.set_details_visible)
+        header.addWidget(self.details_button)
+
+        self.profile_button = QPushButton("Your Profile (Maya)")
+        self.profile_button.clicked.connect(self.profile_requested.emit)
+        header.addWidget(self.profile_button)
+        layout.addLayout(header)
 
         self.task_description = QLabel()
         self.task_description.setObjectName("taskDescription")
+        self.task_description.setTextFormat(Qt.PlainText)
         self.task_description.setWordWrap(True)
+        layout.addWidget(self.task_description)
 
-        task_layout.addWidget(heading)
-        task_layout.addWidget(self.task_title)
-        task_layout.addWidget(self.task_description)
+        steps = QLabel("Review your profile  →  Plan and draft with AI  →  Check and submit")
+        steps.setObjectName("taskDescription")
+        steps.setWordWrap(True)
+        layout.addWidget(steps)
 
-        content_layout.addWidget(task_card)
+        self.details_button.setChecked(True)
+        study_theme().changed.connect(self.apply_styles)
+        self.apply_styles()
 
-        # Success criteria
-        criteria_title = QLabel("What Makes a Strong Letter?")
-        criteria_title.setObjectName("sectionTitle")
-        criteria_title.setWordWrap(True)
-
-        content_layout.addWidget(criteria_title)
-
-        criteria = [
-            "Clearly explain Maya's circumstances.",
-            "Propose a realistic repayment plan.",
-            "Include relevant supporting information.",
-            "Use a professional and persuasive tone.",
-        ]
-
-        for criterion in criteria:
-            label = QLabel("✓  " + criterion)
-            label.setObjectName("criterionLabel")
-            label.setWordWrap(True)
-            content_layout.addWidget(label)
-
-        # Profile access card
-        profile_card = QFrame()
-        profile_card.setObjectName("taskCard")
-
-        profile_layout = QVBoxLayout(profile_card)
-        profile_layout.setContentsMargins(16, 16, 16, 16)
-        profile_layout.setSpacing(12)
-
-        profile_heading = QLabel("CASE MATERIALS")
-        profile_heading.setObjectName("cardHeading")
-
-        profile_description = QLabel(
-            "Review Maya's personal, employment, financial, "
-            "medical, and housing information."
-        )
-        profile_description.setObjectName("taskDescription")
-        profile_description.setWordWrap(True)
-
-        self.profile_button = QPushButton("View Maya's Profile")
-        self.profile_button.setObjectName("profileButton")
-        self.profile_button.setCursor(Qt.PointingHandCursor)
-        self.profile_button.clicked.connect(
-            self.profile_requested.emit
-        )
-
-        profile_layout.addWidget(profile_heading)
-        profile_layout.addWidget(profile_description)
-        profile_layout.addWidget(self.profile_button)
-
-        content_layout.addWidget(profile_card)
-        content_layout.addStretch()
-
-        self.scroll_area.setWidget(content)
-        main_layout.addWidget(self.scroll_area, 1)
-
-        # Safety instruction
-        instructions = QLabel(
-            "All case information is fictional. "
-            "Use only the provided character information. "
-            "Do not enter your own personal information."
-        )
-        instructions.setObjectName("instructionsLabel")
-        instructions.setWordWrap(True)
-
-        main_layout.addWidget(instructions)
+    def set_details_visible(self, visible):
+        self.task_description.setVisible(visible)
+        self.details_button.setText("Hide task details" if visible else "Show task details")
 
     def set_task(self, task, task_number=1, task_count=1):
-        """Update the assignment from the task configuration."""
-
-        self.task_title.setText(
-            task.get("title", "Financial Hardship Request")
-        )
-
-        self.task_description.setText(
-            task.get("objective", "")
-        )
-
-        self.scroll_area.verticalScrollBar().setValue(0)
+        self.task_title.setText(task.get("title", "Financial Hardship Request"))
+        self.task_description.setText(task.get("objective", ""))
+        self.details_button.setChecked(True)
 
     def apply_styles(self):
         self.setStyleSheet(study_theme().stylesheet("""
             QWidget#taskWidget {
-                background-color: $page;
-                color: $text;
-            }
-
-            QWidget#taskWidget QLabel {
-                background-color: transparent;
-                color: $text;
-            }
-
-            QWidget#taskContent {
-                background-color: $page;
-            }
-
-            QScrollArea {
-                background-color: transparent;
-                border: none;
-            }
-
-            QLabel#sidebarTitle {
-                font-size: 20px;
-                font-weight: bold;
-                color: $text;
-            }
-
-            QLabel#sidebarSubtitle {
-                font-size: 12px;
-                color: $muted;
-            }
-
-            QLabel#sectionTitle {
-                font-size: 15px;
-                font-weight: bold;
-                color: $text;
-            }
-
-            QFrame#taskCard {
                 background-color: $surface;
                 border: 1px solid $border;
-                border-radius: 10px;
+                border-top: 4px solid $brand;
+                border-radius: 14px;
             }
-
-            QFrame#taskCard QLabel {
-                background-color: transparent;
-                border: none;
-            }
-
-            QLabel#cardHeading {
-                font-size: 12px;
-                font-weight: bold;
-                color: $accent;
-            }
-
             QLabel#taskTitle {
-                font-size: 16px;
+                font-size: 18px;
                 font-weight: bold;
                 color: $heading;
             }
-
             QLabel#taskDescription {
-                font-size: 13px;
+                font-size: 14px;
                 color: $body;
             }
-
-            QLabel#criterionLabel {
+            QPushButton {
+                background-color: $subtle;
+                color: $text;
+                border: 1px solid $control_border;
+                border-radius: 6px;
+                padding: 7px 12px;
                 font-size: 13px;
-                color: $body;
             }
-
-            QLabel#instructionsLabel {
-                font-size: 12px;
-                color: $muted;
-            }
-
-            QPushButton#profileButton {
-                background-color: $primary;
-                color: $on_primary;
-                border: none;
-                border-radius: 7px;
-                padding: 12px;
-                font-size: 13px;
-                font-weight: bold;
-            }
-
-            QPushButton#profileButton:hover {
-                background-color: $primary_hover;
-            }
+            QPushButton:hover { background-color: $hover; }
+            QPushButton:focus { border-color: $accent; }
+            QPushButton:checked { background-color: $selection; }
         """))

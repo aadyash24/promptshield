@@ -7,7 +7,7 @@
     "age": 28,
     "description": "You are Maya Okafor, a 28-year-old graphic designer living at Cedar Grove Apartments. Following an unexpected medical procedure and missed work, you are experiencing temporary financial difficulty."
   },
-  "objective": "Use the AI assistant and letter editor to prepare a clear, persuasive request to your property manager for a temporary rent payment arrangement. Explain the situation, propose a realistic payment plan, and maintain a professional tone. Use relevant case information as needed; you do not need to include everything.",
+  "objective": "You are Maya Okafor, a tenant at Cedar Grove Apartments. An unexpected medical procedure left you with extra expenses and caused you to miss work. You are back on your regular schedule, but cannot pay all of your overdue November rent immediately. Your property manager, Jordan Ellis, will consider a written explanation and a realistic payment proposal.\n\nReview your provided profile, then use the AI assistant to work out a payment arrangement and prepare your letter to Jordan. Write and interact with the assistant as Maya, using first person (I, me, my). Decide what information about your situation to share with the assistant and what belongs in your letter. Check the amounts, dates, and tone before submitting your finished letter in the editor.",
   "context": "Your property manager has said that temporary arrangements may be considered if tenants submit a written explanation and a reasonable repayment proposal. No arrangement has been approved. All people, organizations, and details in this case are fictional. Do not enter your own personal information.",
   "profile": {
     "personal": {
@@ -24,27 +24,18 @@
       "job_title": "Graphic Designer",
       "employment_type": "Full-time, hourly",
       "employment_start": "March 2024",
-      "normal_monthly_take_home_pay": 3800,
-      "current_month_take_home_pay": 2400,
       "missed_work": "October 19–30, 2026",
       "supervisor": "Elena Brooks",
       "employee_id": "WDS-02841",
       "current_status": "Returned to regular work schedule in November",
-      "notes": "Maya expects her income to return to normal during the following pay period."
+      "notes": "You expect your income to return to normal during the following pay period."
     },
     "financial": {
       "normal_monthly_take_home_pay": 3800,
       "current_month_take_home_pay": 2400,
-      "monthly_rent": 1450,
-      "out_of_pocket_medical_expenses": 1200,
-      "amount_available_for_rent": 900,
-      "remaining_rent_balance": 550,
-      "bank": "Riverstone Community Bank",
-      "account_type": "Checking",
-      "demonstration_account_number": "0000 0000 0042",
       "savings_balance": 350,
       "credit_card_balance": 1870,
-      "notes": "Maya can make a partial payment now and expects her regular income to resume. The account number is a nonfunctional synthetic test value."
+      "notes": "Payment availability is listed in Housing. The available amounts already account for other commitments; savings and credit are not additional funds available for this rent payment."
     },
     "medical": {
       "provider": "Lakeside Medical Center",
@@ -54,32 +45,52 @@
       "out_of_pocket_expenses": 1200,
       "medical_record_reference": "MRN-000087",
       "insurer": "Harbor Health Insurance",
-      "insurance_claim_reference": "HH-2026-0087",
       "current_condition": "Recovering as expected",
       "work_impact": "Temporarily unable to work scheduled shifts",
       "notes": "The procedure was successful and recovery is progressing normally."
     },
     "housing": {
+      "rent_owed_for_november": "$1,450; no payment has been made yet",
+      "available_for_rent_now": "$900 on November 9, 2026",
+      "available_from_next_paycheck": "Up to $600 toward rent on November 20, 2026",
+      "payment_constraints": "These are the amounts available for rent after other commitments. No additional funds are available before November 20.",
+      "original_due_date": "November 1, 2026",
+      "property_manager": "Jordan Ellis",
       "property": "Cedar Grove Apartments",
       "unit": "4B",
-      "property_manager": "Jordan Ellis",
-      "monthly_rent": 1450,
-      "original_due_date": "November 1, 2026",
-      "amount_overdue_before_payment": 1450,
-      "proposed_first_payment": "$900 on November 9, 2026",
-      "proposed_second_payment": "$550 by November 20, 2026",
       "reason_for_request": "Temporary income reduction and unexpected medical expenses",
+      "current_work_status": "Returned to regular work schedule in November",
       "previous_payment_history": "Consistently on time for 18 months",
       "preferred_outcome": "Avoid additional fees and maintain good standing",
-      "notes": "The property manager will consider a written explanation and a reasonable repayment proposal."
+      "notes": "The property manager will consider a written explanation and a reasonable repayment proposal. No arrangement has been approved."
     }
   },
   "research_notes_not_for_participants": {
-    "essential_or_strongly_relevant": ["monthly rent", "remaining balance", "proposed payment amounts and dates", "reason for temporary hardship"],
-    "contextually_useful": ["reduced income", "missed work", "unexpected medical expenses", "on-time rent history"],
-    "optional_potentially_excessive": ["exact employer", "salary details", "specific procedure"],
-    "generally_unnecessary_for_ai_drafting": ["bank account number", "medical record reference", "insurance claim reference", "employee ID"],
-    "context_dependent": ["contact information", "tenant identifier", "home address"],
+    "essential_or_strongly_relevant": [
+      "rent owed",
+      "amounts available for rent and availability dates",
+      "reason for temporary hardship"
+    ],
+    "contextually_useful": [
+      "reduced income",
+      "missed work",
+      "unexpected medical expenses",
+      "on-time rent history"
+    ],
+    "optional_potentially_excessive": [
+      "exact employer",
+      "salary details",
+      "specific procedure"
+    ],
+    "generally_unnecessary_for_ai_drafting": [
+      "medical record reference",
+      "employee ID"
+    ],
+    "context_dependent": [
+      "contact information",
+      "tenant identifier",
+      "home address"
+    ],
     "caution": "Assess unnecessary disclosures separately from detection findings. Synthetic examples should be pretested; do not assume detector coverage."
   }
 }
