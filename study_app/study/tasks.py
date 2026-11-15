@@ -4,11 +4,15 @@ from pathlib import Path
 
 
 class TaskManager:
-    def __init__(self):
+    def __init__(self, task_id=None):
         self.tasks = []
         self.current_index = 0
 
         self.load_tasks()
+        if task_id is not None:
+            self.current_index = next((i for i, task in enumerate(self.tasks) if task["id"] == task_id), -1)
+            if self.current_index < 0:
+                raise ValueError(f"Unknown task ID: {task_id}")
 
     def load_tasks(self):
         """Load study tasks from the JSON configuration."""
@@ -26,6 +30,11 @@ class TaskManager:
 
         if not self.tasks:
             raise ValueError("No study tasks were found.")
+
+    def load_profile(self):
+        path = Path(__file__).resolve().parent.parent / "config" / self.current_task["profile_file"]
+        with path.open(encoding="utf-8") as file:
+            return json.load(file)
 
     @property
     def current_task(self):

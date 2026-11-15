@@ -21,6 +21,7 @@ from ps.rewrite.ollama_rewriter import OllamaRewriter
 from ps.warnings.finding_utils import locate_findings
 from services.chat_backend import ChatBackend
 from ui.theme import study_theme
+from study.manual_edits import ManualEditTracker
 
 
 class DetectionWorker(QThread):
@@ -372,7 +373,8 @@ class ChatWidget(QWidget):
     detection_completed = Signal(object)
     sent_detection_completed = Signal(object)
 
-    def __init__(self, parent=None, study_condition="active"):
+    def __init__(self, parent=None, study_condition="active", character_name="Maya Okafor"):
+        self.character_name = character_name
         super().__init__(parent)
         self.setObjectName("chatWidget")
         self.setAttribute(Qt.WA_StyledBackground, True)
@@ -392,6 +394,10 @@ class ChatWidget(QWidget):
         self._chat_history = []
         self._awaiting_reply = False
         self._draft_revision = 0
+        self._draft_id = 1
+        self._edit_source = "manual"
+        self._manual_tracker = ManualEditTracker()
+        self.rewrites_enabled = True
         self._detection_worker = None
         self._pending_sent_checks = deque()
         self._sent_check_id = None
@@ -455,7 +461,7 @@ class ChatWidget(QWidget):
         self.scroll_area.setWidget(self.messages_container)
         container_layout.addWidget(self.scroll_area, 1)
 
-        reminder = QLabel("You are Maya for this task. Use only the fictional profile, never your real personal information.")
+        reminder = QLabel(f"You are {self.character_name} for this task. Use only the fictional profile, never your real personal information.")
         reminder.setObjectName("caseReminder")
         reminder.setWordWrap(True)
         reminder.setContentsMargins(20, 10, 20, 0)
@@ -508,16 +514,28 @@ class ChatWidget(QWidget):
             show_actions=False,
         )
 
+    def set_rewrites_enabled(self, enabled):
+        self.rewrites_enabled = bool(enabled)
+        self.message_input._privacy_popup.rewrite_button.setVisible(self.rewrites_enabled and self.study_condition == "active")
+
     def set_study_condition(self, condition):
         if condition not in ("active", "silent"):
             raise ValueError("Condition must be 'active' or 'silent'.")
         self.study_condition = condition
+        self.set_rewrites_enabled(self.rewrites_enabled)
         if condition == "silent":
             self.message_input.clear_highlights()
         elif self.message_input.toPlainText().strip():
             self.detection_timer.start()
 
     def on_draft_changed(self):
+        changes = self._manual_tracker.edit(self.message_input.toPlainText(), self._edit_source)
+        if changes:
+            self.study_event.emit("draft_sensitive_edit", {
+                "draft_id": self._draft_id, "revision": self._draft_revision + 1,
+                "source": "manual", "changes": changes,
+                "draft_empty": not bool(self.message_input.toPlainText().strip()),
+            })
         self.rewrite_notice.hide()
         self.rewrite_notice_timer.stop()
         self._draft_revision += 1
@@ -580,6 +598,7 @@ class ChatWidget(QWidget):
 
         text = self.message_input.toPlainText()
         spans = locate_findings(text, findings)
+        self._manual_tracker.observe(text, spans)
         self._last_detection_text = text
         self._last_findings = findings
         self._last_flagged_spans = spans
@@ -593,6 +612,7 @@ class ChatWidget(QWidget):
         if finding_keys != self._last_logged_findings:
             self._last_logged_findings = finding_keys
             self.detection_completed.emit({
+                "draft_id": self._draft_id,
                 "revision": revision,
                 "mode": result.get("mode", "unknown"),
                 "finding_count": len(findings),
@@ -600,6 +620,7 @@ class ChatWidget(QWidget):
             })
             if self.study_condition == "active" and spans:
                 self.study_event.emit("warning_displayed", {
+                    "draft_id": self._draft_id,
                     "revision": revision,
                     "finding_count": len(spans),
                     "findings_by_category_and_tier": self.finding_breakdown(spans),
@@ -655,7 +676,7 @@ class ChatWidget(QWidget):
             self.run_detection()
 
     def rewrite_safely(self, finding):
-        if self.study_condition != "active" or self._rewrite_worker is not None:
+        if not self.rewrites_enabled or self.study_condition != "active" or self._rewrite_worker is not None:
             return
         message = self.message_input.toPlainText()
         if self._last_detection_text != message:
@@ -686,7 +707,8 @@ class ChatWidget(QWidget):
 
     def can_apply_rewrite(self, revision):
         return (
-            revision == self._draft_revision
+            self.rewrites_enabled
+            and revision == self._draft_revision
             and self.study_condition == "active"
             and not self._detection_stopped
         )
@@ -696,9 +718,13 @@ class ChatWidget(QWidget):
         cursor = self.message_input.textCursor()
         cursor.setPosition(len(draft[:start].encode("utf-16-le")) // 2)
         cursor.setPosition(len(draft[:end].encode("utf-16-le")) // 2, QTextCursor.KeepAnchor)
-        cursor.beginEditBlock()
-        cursor.insertText(text)
-        cursor.endEditBlock()
+        self._edit_source = "rewrite"
+        try:
+            cursor.beginEditBlock()
+            cursor.insertText(text)
+            cursor.endEditBlock()
+        finally:
+            self._edit_source = "manual"
         self.message_input.setTextCursor(cursor)
         self.message_input.setFocus()
 
@@ -730,7 +756,11 @@ class ChatWidget(QWidget):
         if self.rewrite_notice.isHidden():
             return
         revision = self._draft_revision
-        self.message_input.undo()
+        self._edit_source = "rewrite_undo"
+        try:
+            self.message_input.undo()
+        finally:
+            self._edit_source = "manual"
         self.message_input.setFocus()
         self.study_event.emit("rewrite_fallback_undone", {
             "revision": revision, "result_revision": self._draft_revision,
@@ -801,6 +831,9 @@ class ChatWidget(QWidget):
         if not text or self.message_input.isReadOnly() or self._awaiting_reply:
             return
         context = {
+            "draft_id": self._draft_id,
+            "manual_edit_observed_scans": self._manual_tracker.scans,
+            "manual_removed_values_at_send": self._manual_tracker.summary(),
             "revision": self._draft_revision,
             "draft_scan_current": self._last_detection_text == self.message_input.toPlainText(),
             "visible_warning_count": (
@@ -813,6 +846,8 @@ class ChatWidget(QWidget):
         self._last_findings = []
         self._last_flagged_spans = []
         self.message_input.clear_highlights()
+        self._manual_tracker = ManualEditTracker()
+        self._draft_id += 1
         self.message_input.clear()
         self.message_submitted.emit(text)
         self.study_message_submitted.emit(text, context)
@@ -860,6 +895,8 @@ class ChatWidget(QWidget):
         self._last_detection_text = None
         self._last_findings = []
         self._last_flagged_spans = []
+        self._manual_tracker = ManualEditTracker()
+        self._draft_id += 1
         self.message_input.clear()
         self.message_input.clear_highlights()
         self._check_queued = False

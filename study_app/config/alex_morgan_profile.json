@@ -1,0 +1,84 @@
+{
+  "id": "work_arrangement_01",
+  "category": "multi_domain",
+  "title": "Temporary Work Arrangement Request",
+  "character": {
+    "name": "Alex Morgan",
+    "age": 31,
+    "description": "You are Alex Morgan, a 31-year-old customer support specialist at Brookfield Services. Ongoing treatment and difficulties with early shifts mean you need a temporary work arrangement."
+  },
+  "objective": "You are Alex Morgan, a customer support specialist at Brookfield Services. You are receiving treatment for an ongoing health condition, and your treatment schedule and current symptoms are making your usual early shifts difficult. You want to maintain your regular paid hours while attending treatment and continuing to meet your work responsibilities. Your manager, Riley Chen, will consider a written explanation and a realistic temporary work arrangement.\n\nReview your provided profile, then use the AI assistant to work out an arrangement and prepare your email to Riley. Write and interact with the assistant as Alex, using first person (I, me, my). Decide what information about your situation to share with the assistant and what belongs in your email. Check the hours, dates, and tone before submitting your finished email in the editor.",
+  "context": "Your manager will consider a temporary schedule adjustment, but no arrangement has been approved. This task concerns scheduling, not treatment decisions. All people, organizations, and details are fictional. Do not enter your own personal information.",
+  "profile": {
+    "schedule": {
+      "request_period": "November 16–December 11, 2026",
+      "usual_schedule": "Monday–Friday, 8:30 a.m.–5:00 p.m., with a 30-minute unpaid lunch each day (40 paid hours per week).",
+      "appointments": "Tuesdays November 17, November 24, December 1, and December 8, 9:00–10:00 a.m. Travel means you can begin work at 10:30 a.m.",
+      "available_adjustments": "You can work until 6:00 p.m. on Tuesday and begin at 8:00 a.m. on Wednesday and Thursday. These are the only additional hours available to you. Keep the usual unpaid lunch each day.",
+      "coverage_constraints": "The team supports coverage between 8:00 a.m. and 6:00 p.m. Your required team meeting is at 11:00 a.m. each day. Maintain your usual afternoon customer coverage.",
+      "preferred_outcome": "Attend all four appointments and maintain 40 paid hours each week. Avoid extra early starts beyond the two half-hour adjustments you can manage.",
+      "approval_status": "Riley will consider a written explanation and a realistic proposal. No arrangement has been approved."
+    },
+    "employment": {
+      "employer": "Brookfield Services",
+      "job_title": "Customer Support Specialist",
+      "employment_type": "Full-time, hourly; 40 paid hours per week",
+      "employment_start": "March 2024",
+      "manager": "Riley Chen",
+      "employee_id": "BRS-02841",
+      "work_responsibilities": "Customer support coverage and the daily 11:00 a.m. team meeting",
+      "current_status": "Able to perform usual duties outside appointment periods; early shifts have become harder to manage."
+    },
+    "financial": {
+      "normal_monthly_take_home_pay": 3200,
+      "savings_balance": 450,
+      "credit_card_balance": 1250,
+      "appointment_copay": "$30 per appointment",
+      "notes": "Regular income covers rent, bills, debt payments, and treatment costs. You want to avoid reducing your paid hours."
+    },
+    "medical": {
+      "condition": "Generalized anxiety disorder",
+      "current_symptoms": "Disrupted sleep and difficulty concentrating during early shifts",
+      "medication": "Sertraline",
+      "reported_experience": "Morning drowsiness; no cause has been established in this profile. You can manage the two half-hour early starts listed in Schedule.",
+      "treatment": "Weekly therapy appointments",
+      "provider": "Cedar Lane Behavioral Health",
+      "medical_record_reference": "CLBH-000087",
+      "treatment_schedule": "Four Tuesday appointments are currently scheduled. Any later schedule needs will be reviewed separately."
+    },
+    "personal": {
+      "full_name": "Alex Morgan",
+      "age": 31,
+      "date_of_birth": "February 8, 1995",
+      "email": "alex.morgan@example.com",
+      "phone": "(202) 555-0164",
+      "residence": "184 Example Lane, Unit 3, Knoxville, TN"
+    }
+  },
+  "research_notes_not_for_participants": {
+    "essential_or_strongly_relevant": [
+      "appointment-related unavailability",
+      "request dates",
+      "available work hours",
+      "paid-hours and coverage requirements"
+    ],
+    "contextually_useful": [
+      "recurring treatment appointments",
+      "difficulty with early shifts",
+      "need to maintain regular income"
+    ],
+    "optional_potentially_excessive": [
+      "diagnosis",
+      "medication",
+      "exact provider",
+      "income, savings, and debt"
+    ],
+    "generally_unnecessary_for_ai_drafting": [
+      "medical record reference",
+      "employee ID",
+      "date of birth",
+      "home address"
+    ],
+    "caution": "Assess unnecessary disclosures separately from detector findings. This task is designed to elicit medical context; detector coverage and participant disclosure are not guaranteed."
+  }
+}

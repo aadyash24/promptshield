@@ -1,3 +1,4 @@
+from textwrap import fill
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -78,12 +79,18 @@ class StudyOverviewWindow(QMainWindow):
             "Positive Detection Checks",
             "Warning Exposures",
             "Warning Hovers",
+            "Sent after manual removal",
         ])
         self.chart_selector.currentIndexChanged.connect(
             self.update_chart
         )
 
         controls.addWidget(self.chart_selector)
+        controls.addWidget(QLabel("Task:"))
+        self.task_filter = QComboBox()
+        self.task_filter.addItem("All tasks", None)
+        self.task_filter.currentIndexChanged.connect(self.apply_filter)
+        controls.addWidget(self.task_filter)
         controls.addStretch()
         layout.addLayout(controls)
 
@@ -98,10 +105,15 @@ class StudyOverviewWindow(QMainWindow):
         splitter.addWidget(self.canvas)
 
         self.table = QTableWidget()
-        self.table.setColumnCount(10)
+        self.table.setColumnCount(15)
         self.table.setHorizontalHeaderLabels([
             "Participant",
             "Condition",
+            "Task",
+            "Task version",
+            "Rewrites enabled",
+            "Sent after manual removal",
+            "Sent with draft observations",
             "Status",
             "Duration (s)",
             "Messages",
@@ -156,7 +168,20 @@ class StudyOverviewWindow(QMainWindow):
         """)
 
     def refresh_data(self):
-        self.records = load_study()
+        self.all_records = load_study()
+        selected = self.task_filter.currentData()
+        self.task_filter.blockSignals(True)
+        self.task_filter.clear()
+        self.task_filter.addItem("All tasks", None)
+        for key, label in sorted({r["task_id"]: r["task_title"] for r in self.all_records}.items()):
+            self.task_filter.addItem(label, key)
+        self.task_filter.setCurrentIndex(max(0, self.task_filter.findData(selected)))
+        self.task_filter.blockSignals(False)
+        self.apply_filter()
+
+    def apply_filter(self):
+        selected = self.task_filter.currentData()
+        self.records = [r for r in self.all_records if selected is None or r["task_id"] == selected]
 
         summary = summarize_study(self.records)
 
@@ -176,6 +201,7 @@ class StudyOverviewWindow(QMainWindow):
             return f"{value:.1%}" if value is not None else "N/A"
 
         self.summary_label.setText(
+            f"Task: {self.task_filter.currentText()} (condition summary below)\n"
             f"Sessions: {summary['total_sessions']}    "
             f"Unique participant IDs: "
             f"{summary['unique_participants']}\n"
@@ -202,6 +228,11 @@ class StudyOverviewWindow(QMainWindow):
             fields = [
                 record.get("participant_id"),
                 record.get("condition"),
+                record.get("task_title"),
+                record.get("task_version"),
+                record.get("rewrites_enabled"),
+                record.get("manual_removal_messages"),
+                record.get("manual_removal_observed_messages"),
                 record.get("status"),
                 record.get("duration_seconds"),
                 record.get("messages_sent"),
@@ -225,6 +256,7 @@ class StudyOverviewWindow(QMainWindow):
         ax = self.figure.add_subplot(111)
 
         metrics = {
+            "Sent after manual removal": ("manual_removal_messages", "Messages (exact-value evidence)"),
             "Completion Time": (
                 "duration_seconds",
                 "Seconds",
@@ -255,20 +287,12 @@ class StudyOverviewWindow(QMainWindow):
             self.chart_selector.currentText()
         ]
 
-        groups = {
-            "Active": [
-                r[metric]
-                for r in self.records
-                if r["condition"] == "active"
-                and r.get(metric) is not None
-            ],
-            "Silent": [
-                r[metric]
-                for r in self.records
-                if r["condition"] == "silent"
-                and r.get(metric) is not None
-            ],
-        }
+        groups = {}
+        for record in self.records:
+            label = f"{fill(record['task_title'], width=24)}\n{record['condition'].title()}"
+            groups.setdefault(label, [])
+            if record.get(metric) is not None:
+                groups[label].append(record[metric])
 
         names = []
         averages = []
@@ -303,7 +327,7 @@ class StudyOverviewWindow(QMainWindow):
         ax.set_ylabel(ylabel)
         ax.set_title(
             f"Mean {self.chart_selector.currentText()} "
-            "by Condition"
+            "by Task and Condition"
         )
         ax.grid(axis="y", alpha=0.2)
 

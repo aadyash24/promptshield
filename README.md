@@ -141,3 +141,64 @@ linked by `message_id` to a `message_detection_completed` event. An `ok` result 
 the detector mode, whether it flagged PII, finding count, categories, and maximum tier.
 `failed` and `interrupted` results have an unknown disclosure outcome. Chat and detector
 text are kept out of the study logs.
+
+### Assigning the writing task
+
+Researcher setup has separate **Assigned task** and **Study condition** selectors.
+Each participant completes one task: Financial Hardship Request (Maya, letter) or
+Temporary Work Arrangement Request (Alex, email). Follow the agreed allocation
+schedule across all four task/condition combinations; selection does not randomly
+assign participants. Development mode supports either task and writes no logs.
+
+Task definitions in `study_app/config/tasks.json` identify the matching profile,
+version, recipient, and editor guidance. Profile tabs follow the section order in
+the selected profile JSON; researcher-only notes are not displayed. The original
+hardship session ID remains `hardship_01` (version `hardship_02`); the new task uses
+`work_arrangement_01`. Session metadata saves the task ID, title, and version;
+every event includes the assigned task ID. Profile and draft text are not logged.
+
+The Session Inspector (`python study_app/inspect_sessions.py`) labels and filters
+sessions by task and displays task version. The Study Overview
+(`python study_app/inspect_study.py`) filters by task, shows task/version columns,
+and charts task-by-condition groups. Its condition summary pools the currently
+selected tasks; use the task filter for within-task comparisons. Historical logs
+without task titles remain readable. Survey wording is now task-neutral under
+`disclosure_v2`; saved historical survey wording remains unchanged.
+
+### Rewrites and manual-edit evidence
+
+Researcher setup includes **Enable Rewrite this detail**, unchecked by default.
+Active sessions still show highlights and privacy explanations when rewrites are
+disabled, but the rewrite button and rewrite execution are disabled. Silent
+sessions never offer rewrites. The option controls the built-in, user-requested
+rewrite feature; participants can still ask the chatbot for writing help.
+`rewrites_enabled` is recorded in session metadata. The active survey omits the
+rewrite-use question when the feature is disabled (`disclosure_v3`).
+
+New sessions record `manual_edit_tracking_version: exact_value_v1`. After a
+successful draft scan, exact detected values are tracked transiently in memory:
+
+- `draft_sensitive_edit` records draft ID, revision, category/tier counts of
+  occurrences removed/restored by non-rewrite edits, and whether the draft is empty.
+- `message_sent` includes the draft ID, number of observed scans, and
+  `manual_removed_values_at_send` (category/tier/count only). Restored occurrences
+  no longer count. The send-triggered input clear is excluded.
+- Automatic rewrite/fallback/undo edits are excluded; mixed automatic changes
+  conservatively clear prior removal attribution. A new sent draft resets tracking.
+- Existing sent-message detection still reports what the detector finds in the
+  final submitted message, including failed or interrupted checks.
+
+No detected values, prompt text, offsets, or hashes are added to the logs. These
+are exact-value removal signals, not verified anonymization, unique PII items,
+proof of intent, or proof that a warning caused the change. Reformatting, typos,
+pasting a replacement, or removing a whole passage can produce the same signal.
+Values removed before the first successful scan are unobservable. A zero with no
+observed scans is not evidence that no editing occurred. Nested/overlapping values
+can contribute multiple category counts. The survey supplies self-reported context.
+
+The Session Inspector displays rewrite availability and tracking version, plus
+**Sent after manual value removal**. The Study Overview includes rewrite settings,
+manual-removal message counts, and counts of sent messages with draft observations.
+Legacy sessions show unavailable values rather than fabricated zeros. Inspect
+`draft_sensitive_edit`, linked `message_sent`, and `message_detection_completed`
+events together; old logs cannot be retroactively upgraded to this measure.

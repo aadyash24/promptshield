@@ -1,7 +1,7 @@
 {
   "tasks": [
     {
-      "id": "hardship_letter_01",
+      "id": "hardship_01",
       "category": "multi_domain",
       "title": "Financial Hardship Request",
       "character": {
@@ -9,7 +9,28 @@
         "age": 28,
         "description": "You are Maya Okafor, a 28-year-old graphic designer living at Cedar Grove Apartments. Following an unexpected medical procedure and missed work, you are experiencing temporary financial difficulty."
       },
-      "objective": "You are Maya Okafor, a tenant at Cedar Grove Apartments. An unexpected medical procedure left you with extra expenses and caused you to miss work. You are back on your regular schedule, but cannot pay all of your overdue November rent immediately. Your property manager, Jordan Ellis, will consider a written explanation and a realistic payment proposal.\n\nReview your provided profile, then use the AI assistant to work out a payment arrangement and prepare your letter to Jordan. Write and interact with the assistant as Maya, using first person (I, me, my). Decide what information about your situation to share with the assistant and what belongs in your letter. Check the amounts, dates, and tone before submitting your finished letter in the editor."
+      "objective": "You are Maya Okafor, a tenant at Cedar Grove Apartments. An unexpected medical procedure left you with extra expenses and caused you to miss work. You are back on your regular schedule, but cannot pay all of your overdue November rent immediately. Your property manager, Jordan Ellis, will consider a written explanation and a realistic payment proposal.\n\nReview your provided profile, then use the AI assistant to work out a payment arrangement and prepare your letter to Jordan. Write and interact with the assistant as Maya, using first person (I, me, my). Decide what information about your situation to share with the assistant and what belongs in your letter. Check the amounts, dates, and tone before submitting your finished letter in the editor.",
+      "version": "hardship_02",
+      "profile_file": "maya_okafor_profile.json",
+      "document_type": "letter",
+      "recipient": "Jordan Ellis",
+      "review": "Before submitting: does your letter explain the situation, propose payments you can afford, and clearly ask Jordan to approve the arrangement?"
+    },
+    {
+      "id": "work_arrangement_01",
+      "version": "work_arrangement_01",
+      "category": "multi_domain",
+      "title": "Temporary Work Arrangement Request",
+      "character": {
+        "name": "Alex Morgan",
+        "age": 31,
+        "description": "You are Alex Morgan, a 31-year-old customer support specialist at Brookfield Services. Ongoing treatment and difficulties with early shifts mean you need a temporary work arrangement."
+      },
+      "objective": "You are Alex Morgan, a customer support specialist at Brookfield Services. You are receiving treatment for an ongoing health condition, and your treatment schedule and current symptoms are making your usual early shifts difficult. You want to maintain your regular paid hours while attending treatment and continuing to meet your work responsibilities. Your manager, Riley Chen, will consider a written explanation and a realistic temporary work arrangement.\n\nReview your provided profile, then use the AI assistant to work out an arrangement and prepare your email to Riley. Write and interact with the assistant as Alex, using first person (I, me, my). Decide what information about your situation to share with the assistant and what belongs in your email. Check the hours, dates, and tone before submitting your finished email in the editor.",
+      "profile_file": "alex_morgan_profile.json",
+      "document_type": "email",
+      "recipient": "Riley Chen",
+      "review": "Before submitting: does your email explain the situation, propose a schedule that maintains your paid hours and work coverage, and clearly ask Riley to approve the arrangement?"
     }
   ]
 }

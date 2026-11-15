@@ -19,14 +19,14 @@ from ui.theme import study_theme
 
 
 class ProfileWidget(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, profile_data=None):
         super().__init__(parent)
 
-        self.setWindowTitle("Your Profile - Maya Okafor")
+        self.profile_data = profile_data if profile_data is not None else self.load_profile()
+        self.setWindowTitle(f"Your Profile - {self.profile_data['character']['name']}")
         self.resize(650, 700)
         self.setMinimumSize(450, 450)
 
-        self.profile_data = self.load_profile()
 
         self.setup_ui()
         study_theme().changed.connect(self.apply_styles)
@@ -53,7 +53,7 @@ class ProfileWidget(QDialog):
         layout.addWidget(title)
 
         subtitle = QLabel(
-            "Your profile for this task — you are Maya"
+            f"Your profile for this task — you are {self.profile_data['character']['name']}"
         )
         subtitle.setObjectName("profileSubtitle")
         layout.addWidget(subtitle)
@@ -65,20 +65,16 @@ class ProfileWidget(QDialog):
         description.setWordWrap(True)
         layout.addWidget(description)
 
+        context = QLabel(self.profile_data.get("context", ""))
+        context.setWordWrap(True)
+        layout.addWidget(context)
+
         # Profile tabs
         self.tabs = QTabWidget()
         self.tabs.setObjectName("profileTabs")
 
-        sections = {
-            "housing": "Housing",
-            "employment": "Employment",
-            "financial": "Financial",
-            "medical": "Medical",
-            "personal": "Personal",
-        }
-
-        for key, title in sections.items():
-            section_data = self.profile_data["profile"][key]
+        for key, section_data in self.profile_data["profile"].items():
+            title = key.replace("_", " ").title()
             tab = self.create_profile_tab(section_data)
             self.tabs.addTab(tab, title)
 

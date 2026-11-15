@@ -28,7 +28,7 @@ class TaskWidget(QWidget):
         self.details_button.toggled.connect(self.set_details_visible)
         header.addWidget(self.details_button)
 
-        self.profile_button = QPushButton("Your Profile (Maya)")
+        self.profile_button = QPushButton("Your Profile")
         self.profile_button.clicked.connect(self.profile_requested.emit)
         header.addWidget(self.profile_button)
         layout.addLayout(header)
@@ -53,7 +53,8 @@ class TaskWidget(QWidget):
         self.details_button.setText("Hide task details" if visible else "Show task details")
 
     def set_task(self, task, task_number=1, task_count=1):
-        self.task_title.setText(task.get("title", "Financial Hardship Request"))
+        self.profile_button.setText(f"Your Profile ({task['character']['name'].split()[0]})")
+        self.task_title.setText(task["title"])
         self.task_description.setText(task.get("objective", ""))
         self.details_button.setChecked(True)
 

@@ -83,6 +83,10 @@ class SessionLogger:
         warning_hover_tracking=False,
         interaction_tracking=False,
         survey_enabled=False,
+        task_title=None,
+        task_version=None,
+        rewrites_enabled=None,
+        manual_edit_tracking=False,
     ):
         if condition not in ("active", "silent"):
             raise ValueError(
@@ -104,6 +108,7 @@ class SessionLogger:
         self.started_utc = utc_now()
         self.sequence = 0
         self.closed = False
+        self.rewrites_enabled = rewrites_enabled
         self.survey_enabled = survey_enabled
         self.survey_recorded = False
 
@@ -136,6 +141,14 @@ class SessionLogger:
             "status": "in_progress",
             "logging_policy": "metadata_and_post_study_survey" if survey_enabled else "metadata_only",
         }
+        if rewrites_enabled is not None:
+            self.metadata["rewrites_enabled"] = bool(rewrites_enabled) and condition == "active"
+        if manual_edit_tracking:
+            self.metadata["manual_edit_tracking_version"] = "exact_value_v1"
+        if task_title is not None:
+            self.metadata["task_title"] = task_title
+        if task_version is not None:
+            self.metadata["task_version"] = task_version
         if warning_hover_tracking:
             self.metadata["warning_hover_tracking"] = True
         if interaction_tracking:
@@ -214,7 +227,7 @@ class SessionLogger:
             raise ValueError("Survey already recorded.")
         if status not in ("submitted", "skipped") or not isinstance(answers, dict):
             raise ValueError("Invalid survey submission.")
-        questions = questions_for(self.condition)
+        questions = questions_for(self.condition, rewrites_enabled=self.rewrites_enabled)
         expected = {key for key, _ in questions}
         if status == "skipped":
             if answers:

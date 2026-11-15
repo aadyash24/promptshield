@@ -18,6 +18,7 @@ from ui.promptshield_setup_widget import PromptShieldSetupWidget
 from ui.study_complete_widget import StudyCompleteWidget
 from ui.study_survey_widget import StudySurveyWidget
 from study.survey import SURVEY_VERSION
+from study.tasks import TaskManager
 from ui.study_setup_widget import StudySetupWidget
 from ui.theme import study_theme
 from services.session_logger import create_logger
@@ -86,21 +87,27 @@ def main():
 
     installation.ready.connect(services_ready)
 
-    def start_study(participant_id, condition):
+    def start_study(participant_id, condition, task_id, rewrites_enabled):
         if session["study"] is not None:
             return
 
+        task = TaskManager(task_id).current_task
         logger = create_logger(
             participant_id=participant_id,
             condition=condition,
-            task_id="hardship_01",
-            app_version="prototype-v3",
+            rewrites_enabled=rewrites_enabled,
+            manual_edit_tracking=True,
+            task_id=task["id"],
+            task_title=task["title"],
+            task_version=task["version"],
+            app_version="prototype-v4",
             warning_hover_tracking=True,
             interaction_tracking=True,
             survey_enabled=True,
         )
 
-        study = MainWindow()
+        study = MainWindow(task_id)
+        study.chat_panel.set_rewrites_enabled(rewrites_enabled)
         configure_models(study)
 
         study.participant_id = participant_id
@@ -127,12 +134,12 @@ def main():
         if condition != "dev":
             logger.log_event(
                 "consent_accepted",
-                consent_version="draft_3_survey_text",
+                consent_version="draft_5_manual_edit_tracking",
             )
 
         logger.log_event(
             "task_started",
-            task_version="hardship_02",
+            task_version=task["version"],
             chat_model=study.chat_panel.chat_backend.model,
         )
 
@@ -215,7 +222,7 @@ def main():
                 word_count=len(document.split()),
                 message_count=session["message_count"],
             )
-            survey.set_condition(condition)
+            survey.set_condition(condition, rewrites_enabled=rewrites_enabled)
             logger.log_event("post_study_survey_shown", survey_version=SURVEY_VERSION)
             window.setCurrentWidget(survey)
             window.setWindowTitle("PromptShield — Post-study Survey")

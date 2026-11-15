@@ -2,6 +2,7 @@
 """Cross-session analysis for PromptShield."""
 
 from collections import Counter, defaultdict
+from analytics.task_metadata import task_id, task_title, task_version
 from statistics import mean, median
 
 from analytics.session_data import (
@@ -102,7 +103,20 @@ def analyze_session(session):
         "status": metadata.get(
             "status", "unknown"
         ),
-        "task_id": metadata.get("task_id"),
+        "rewrites_enabled": metadata.get("rewrites_enabled"),
+        "manual_edit_tracking_version": metadata.get("manual_edit_tracking_version"),
+        "manual_removal_messages": sum(
+            bool(e.get("details", {}).get("manual_removed_values_at_send"))
+            for e in get_events(session, "message_sent")
+        ) if metadata.get("manual_edit_tracking_version") else None,
+        "manual_edit_events": counts["draft_sensitive_edit"] if metadata.get("manual_edit_tracking_version") else None,
+        "manual_removal_observed_messages": sum(
+            e.get("details", {}).get("manual_edit_observed_scans", 0) > 0
+            for e in get_events(session, "message_sent")
+        ) if metadata.get("manual_edit_tracking_version") else None,
+        "task_id": task_id(metadata),
+        "task_title": task_title(metadata),
+        "task_version": task_version(session),
         "survey_status": survey_status,
         "survey_version": survey.get("survey_version", metadata.get("survey_version")),
         "survey_answered_count": survey.get("answered_count"),
@@ -201,6 +215,8 @@ def summarize_condition(records):
         ),
         "duration_seconds": stats("duration_seconds"),
         "messages_sent": stats("messages_sent"),
+        "manual_removal_messages": stats("manual_removal_messages"),
+        "manual_removal_observed_messages": stats("manual_removal_observed_messages"),
         "messages_checked": stats("messages_checked"),
         "messages_unchecked": stats("messages_unchecked"),
         "sensitive_message_rate": stats("sensitive_message_rate"),
@@ -227,6 +243,13 @@ def summarize_study(records):
     return {
         "active": summarize_condition(groups["active"]),
         "silent": summarize_condition(groups["silent"]),
+        "by_task": {
+            key: {
+                condition: summarize_condition([r for r in records if r.get("task_id", "unknown") == key and r["condition"] == condition])
+                for condition in ("active", "silent")
+            }
+            for key in sorted({r.get("task_id", "unknown") for r in records})
+        },
         "total_sessions": len(records),
         "unique_participants": len({
             record["participant_id"]

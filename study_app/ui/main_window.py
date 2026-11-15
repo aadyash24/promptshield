@@ -20,18 +20,18 @@ from study.tasks import TaskManager
 
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, task_id=None):
         super().__init__()
 
         self.setWindowTitle("PromptShield - User Study")
         self.resize(1500, 850)
         self.setMinimumSize(1100, 650)
 
-        self.task_manager = TaskManager()
+        self.task_manager = TaskManager(task_id)
 
         self.setup_ui()
 
-        self.profile_window = ProfileWidget(self)
+        self.profile_window = ProfileWidget(self, self.task_manager.load_profile())
 
         self.task_panel.profile_requested.connect(
             self.show_profile
@@ -60,15 +60,15 @@ class MainWindow(QMainWindow):
         )
         main_layout.addWidget(self.task_panel)
 
-        # Right: letter editor
-        self.document_panel = DocumentWidget()
+        # Right: document editor
+        self.document_panel = DocumentWidget(task=self.task_manager.current_task)
 
         self.document_panel.document_submitted.connect(
             self.on_document_submitted
         )
 
         # Left: AI chat
-        self.chat_panel = ChatWidget()
+        self.chat_panel = ChatWidget(character_name=self.task_manager.current_task["character"]["name"])
         status_bar = self.statusBar()
         self.theme_button = QToolButton()
         self.theme_button.setObjectName("themeToggle")

@@ -41,6 +41,7 @@ from analytics.session_data import (
     filter_events,
 )
 from analytics.study_analysis import analyze_session
+from analytics.task_metadata import task_id, task_title, task_version
 
 
 EVENT_COLORS = {
@@ -153,6 +154,11 @@ class SessionResultsWindow(QMainWindow):
         sidebar_layout.addWidget(browse_button)
         sidebar_layout.addWidget(refresh_button)
 
+        self.task_filter = QComboBox()
+        self.task_filter.addItem("All tasks", None)
+        self.task_filter.currentIndexChanged.connect(self.refresh_sessions)
+        sidebar_layout.addWidget(QLabel("Task"))
+        sidebar_layout.addWidget(self.task_filter)
         self.session_list = QListWidget()
         self.session_list.currentRowChanged.connect(
             self.load_selected_session
@@ -216,6 +222,7 @@ class SessionResultsWindow(QMainWindow):
             ("warning_hovers", "Warning Hovers"),
             ("messages_sent", "Messages Sent"),
             ("documents_submitted", "Documents Submitted"),
+            ("manual_removal_messages", "Sent after manual value removal"),
         ]
 
         self.metric_cards = {}
@@ -433,16 +440,28 @@ class SessionResultsWindow(QMainWindow):
             self.sessions_dir
         )
 
-        self.folder_label.setText(
-            str(self.sessions_dir)
-        )
+        sessions = {folder: load_session(folder) for folder in self.session_folders}
+        selected_task = self.task_filter.currentData()
+        self.task_filter.blockSignals(True)
+        self.task_filter.clear()
+        self.task_filter.addItem("All tasks", None)
+        labels = {task_id(s["metadata"]): task_title(s["metadata"]) for s in sessions.values()}
+        for key, label in sorted(labels.items()):
+            self.task_filter.addItem(label, key)
+        index = self.task_filter.findData(selected_task)
+        self.task_filter.setCurrentIndex(max(0, index))
+        self.task_filter.blockSignals(False)
+        selected_task = self.task_filter.currentData()
+        if selected_task is not None:
+            self.session_folders = [f for f in self.session_folders if task_id(sessions[f]["metadata"]) == selected_task]
+        self.folder_label.setText(str(self.sessions_dir))
 
         self.session_list.blockSignals(True)
         self.session_list.clear()
 
         for folder in self.session_folders:
             self.session_list.addItem(
-                folder.name
+                f"{folder.name} | {sessions[folder]['metadata'].get('condition', 'Unknown')} | {task_title(sessions[folder]['metadata'])}"
             )
 
         self.session_list.blockSignals(False)
@@ -488,6 +507,10 @@ class SessionResultsWindow(QMainWindow):
         )
 
         self.session_subtitle.setText(
+            f"Task: {task_title(metadata)} ({task_id(metadata)})   |   "
+            f"Version: {task_version(session) or 'Unknown'}\n"
+            f"Rewrites: { {True: 'enabled', False: 'disabled'}.get(metadata.get('rewrites_enabled'), 'unknown (legacy)')}   |   "
+            f"Manual-removal tracking: {metadata.get('manual_edit_tracking_version', 'unavailable (legacy)')}\n"
             f"Condition: {condition}   |   "
             f"Status: {status}   |   "
             f"Session: {metadata.get('session_id', 'Unknown')}"
@@ -596,7 +619,10 @@ class SessionResultsWindow(QMainWindow):
         )
 
         for key, card in self.metric_cards.items():
-            value = summary.get(key)
+            value = (analyze_session(self.current_session).get(key)
+                     if key == "manual_removal_messages" else summary.get(key))
+            if value is None:
+                value = "N/A"
             card.set_value("—" if value is None else value)
 
     # -----------------------------------------------------

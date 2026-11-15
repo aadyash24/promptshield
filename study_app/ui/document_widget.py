@@ -11,17 +11,20 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal
 
 from ui.theme import study_theme
+from study.tasks import TaskManager
 
 
 class DocumentWidget(QWidget):
     document_submitted = Signal(str)
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, task=None):
         super().__init__(parent)
 
         self.setObjectName("documentWidget")
         self.setAttribute(Qt.WA_StyledBackground, True)
 
+        self.task = task or TaskManager().current_task
+        self.document_type = self.task["document_type"]
         self.is_submitted = False
 
         self.setup_ui()
@@ -36,7 +39,7 @@ class DocumentWidget(QWidget):
         # Header
         header = QHBoxLayout()
 
-        title = QLabel("Letter Editor")
+        title = QLabel(f"{self.document_type.title()} Editor")
         title.setObjectName("editorTitle")
 
         self.word_count = QLabel("0 words")
@@ -50,7 +53,7 @@ class DocumentWidget(QWidget):
 
         # Instructions
         instructions = QLabel(
-            "Draft your hardship request below. "
+            f"Draft your {self.task['title'].lower()} below. "
             "You can write directly or use suggestions from the AI assistant."
         )
         instructions.setObjectName("editorInstructions")
@@ -62,7 +65,7 @@ class DocumentWidget(QWidget):
         self.editor = QPlainTextEdit()
         self.editor.setObjectName("letterEditor")
         self.editor.setPlaceholderText(
-            "Dear Jordan Ellis,\n\n"
+            f"Dear {self.task['recipient']},\n\n"
             "I am writing to request..."
         )
         self.editor.setUndoRedoEnabled(True)
@@ -71,9 +74,7 @@ class DocumentWidget(QWidget):
         layout.addWidget(self.editor, 1)
 
         review = QLabel(
-            "Before submitting: does your letter explain the situation, propose "
-            "payments you can afford, and clearly ask Jordan to approve the arrangement? "
-            "You can return to the AI assistant to revise it."
+            self.task["review"] + " You can return to the AI assistant to revise it."
         )
         review.setObjectName("editorInstructions")
         review.setWordWrap(True)
@@ -87,7 +88,7 @@ class DocumentWidget(QWidget):
         self.clear_button.setObjectName("clearButton")
         self.clear_button.clicked.connect(self.clear_draft)
 
-        self.submit_button = QPushButton("Submit Final Letter")
+        self.submit_button = QPushButton(f"Submit Final {self.document_type.title()}")
         self.submit_button.setObjectName("submitButton")
         self.submit_button.clicked.connect(self.submit_document)
 
@@ -150,14 +151,14 @@ class DocumentWidget(QWidget):
             QMessageBox.warning(
                 self,
                 "Empty Document",
-                "Please write your letter before submitting."
+                f"Please write your {self.document_type} before submitting."
             )
             return
 
         response = QMessageBox.question(
             self,
-            "Submit Final Letter",
-            "Are you sure you want to submit your final letter? "
+            f"Submit Final {self.document_type.title()}",
+            f"Are you sure you want to submit your final {self.document_type}? "
             "You won't be able to edit it afterward.",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No

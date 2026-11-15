@@ -1,20 +1,20 @@
 # Post-study survey
 
-The survey follows final letter submission. Participants answer as themselves about
-playing Maya. All questions are optional; all-blank submissions, skipped surveys,
+The survey follows final document submission. Participants answer as themselves about
+playing their assigned character. All questions are optional; all-blank submissions, skipped surveys,
 and closing without submission remain distinguishable. Survey drafts are not saved.
 
 ## Questions and purpose
 
 The authoritative wording and stable IDs live in `study/survey.py` (version
-`disclosure_v1`). Both conditions receive the same four common questions:
+`disclosure_v3`). Both conditions receive the same four common questions:
 
 - `ai_use`: understand how participants used AI, including reasons for no use.
 - `detail_selection`: understand why details seemed useful or unnecessary to send.
 - `disclosure_changes`: capture reported omission, removal, generalization, or keeping details.
 - `task_friction`: identify barriers that may explain fewer messages or task difficulty.
 
-Active participants also receive:
+Active participants also receive (the rewrite question appears only when rewrites are enabled):
 
 - `feedback_effect`: whether they noticed feedback and how they responded, including no effect.
 - `rewrite_effect`: why they used or avoided rewriting and whether it preserved needed information.
@@ -35,7 +35,7 @@ Each session folder under `data/sessions/` contains `events.jsonl` and
 Session ID, condition, task ID, and timestamps are included in the event envelope;
 participant ID is in the session metadata. Session metadata identifies the policy
 as `metadata_and_post_study_survey`. Survey text is not sent to the AI service.
-Development mode writes no session data. Closing the app after the letter but before
+Development mode writes no session data. Closing the app after the document but before
 survey submission records `post_study_survey_abandoned` without draft answers.
 
 Select a session in the Session Inspector and open the **Survey Results** tab to
@@ -59,9 +59,9 @@ and shares together. Use survey responses to explain observed behavior.
 The detector measures detector-flagged disclosure, including its medical/financial
 categories; this is not an independently verified count of unnecessary PII.
 Keep draft detections and repeated warning events separate from sent-message
-outcomes. Task duration ends at letter submission and excludes survey time.
+outcomes. Task duration ends at document submission and excludes survey time.
 
-The participant disclosure (`draft_3_survey_text`) explicitly explains full survey
-text collection and session linkage. Chat, AI reply, and final letter text are
+The participant disclosure (`draft_5_manual_edit_tracking`) explicitly explains full survey
+text collection and session linkage. Chat, AI reply, and final document text are
 still excluded from the research event logger. Researchers should explain their
 actual storage access, retention, and withdrawal arrangements before consent.

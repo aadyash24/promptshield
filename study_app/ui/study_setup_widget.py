@@ -6,17 +6,20 @@ from PySide6.QtWidgets import (
 )
 
 from ui.theme import study_theme
+from study.tasks import TaskManager
 
 
 class StudySetupWidget(QWidget):
     """Researcher setup followed by participant-facing study information."""
 
-    study_started = Signal(str, str)  # participant_id, condition
+    study_started = Signal(str, str, str, bool)  # participant_id, condition, task_id, rewrites_enabled
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.participant_id = None
         self.condition = None
+        self.task_id = None
+        self.tasks = TaskManager().tasks
         self.setObjectName("studySetup")
         self.setAttribute(Qt.WA_StyledBackground, True)
         self._build_ui()
@@ -72,9 +75,22 @@ class StudySetupWidget(QWidget):
         layout.addWidget(label)
         layout.addWidget(self.condition_combo)
 
+        layout.addWidget(QLabel("Assigned task"))
+        self.task_combo = QComboBox()
+        for task in self.tasks:
+            self.task_combo.addItem(task["title"], task["id"])
+        layout.addWidget(self.task_combo)
+
+        self.rewrites_box = QCheckBox("Enable Rewrite this detail (active / development only)")
+        self.rewrites_box.setChecked(False)
+        self.condition_combo.currentIndexChanged.connect(
+            lambda: self.rewrites_box.setEnabled(self.condition_combo.currentData() != "silent")
+        )
+        layout.addWidget(self.rewrites_box)
+
         note = QLabel(
             "Assign a unique ID across your team. Follow your agreed allocation "
-            "schedule rather than choosing a condition based on the participant. "
+            "schedule for both task and condition rather than choosing based on the participant. "
             "This screen is for researchers only."
         )
         note.setObjectName("finePrint")
@@ -109,17 +125,18 @@ class StudySetupWidget(QWidget):
         disclosure_layout.setSpacing(12)
 
         sections = [
-            ("What you will do", "For this task, you are Maya Okafor. Take on her role and use the AI assistant to plan and write your letter to your property manager. Speak to the assistant and write the letter in first person, as Maya. Open Your Profile (Maya) to review your situation, use the chat to plan and draft, and finish your letter in the editor. You can move between these at any time. After submitting your letter, you will see a short typed survey about your experience and the information you chose to send. Each question is optional, and you can skip the survey."),
+            ("What you will do", ""),
             ("Privacy feedback", "The application may examine text as you type to identify potentially sensitive information. Some participants may see visual privacy guidance, and others may not. This does not prevent you from completing the task."),
             ("Information used", "The case details are fictional. Do not enter your own real personal, medical, or financial information, or information about other real people."),
             (
                 "Data handling",
                 "The study application records interaction timestamps, "
                 "privacy detection categories and severity levels, "
-                "warning interactions, and task completion information. "
+                "warning interactions, counts of previously detected details removed or restored during editing, "
+                "and task completion information. "
                 "The research event logger does not save your chat messages, AI replies, "
-                "or final letter text. It DOES save the full text of post-study survey "
-                "answers you submit, linked to your participant ID, study condition, "
+                "or final document text. It DOES save the full text of post-study survey "
+                "answers you submit, linked to your participant ID, assigned task, study condition, "
                 "and session events. Unsubmitted survey drafts are not saved. "
                 "Survey answers are stored locally in the session log and are not sent "
                 "to the AI assistant. Do not include real personal information in your answers. "
@@ -135,6 +152,8 @@ class StudySetupWidget(QWidget):
             body = QLabel(description)
             body.setObjectName("bodyText")
             body.setWordWrap(True)
+            if name == "What you will do":
+                self.task_information = body
             disclosure_layout.addWidget(heading)
             disclosure_layout.addWidget(body)
         disclosure_layout.addStretch()
@@ -164,13 +183,27 @@ class StudySetupWidget(QWidget):
 
     def _continue_to_consent(self):
         condition = self.condition_combo.currentData()
+        self.task_id = self.task_combo.currentData()
+        self.rewrites_enabled = self.rewrites_box.isChecked() and condition != "silent"
+        task = next(t for t in self.tasks if t["id"] == self.task_id)
+        name = task["character"]["name"]
+        kind = task["document_type"]
+        self.task_information.setText(
+            f"For this task, you are {name}. Take on this role and use the AI assistant "
+            f"to plan and write your {kind} to {task['recipient']}. Speak to the assistant "
+            f"and write in first person, as {name}. Open Your Profile ({name.split()[0]}) "
+            f"to review your situation, use the chat to plan and draft, and finish your {kind} "
+            "in the editor. You can move between these at any time. After submitting, "
+            "you will see a short typed survey about your experience and the information "
+            "you chose to send. Each question is optional, and you can skip the survey."
+        )
 
         # Development mode skips registration and consent.
         # It must never create research data.
         if condition == "dev":
             self.participant_id = "DEV"
             self.condition = "dev"
-            self.study_started.emit("DEV", "dev")
+            self.study_started.emit("DEV", "dev", self.task_id, self.rewrites_enabled)
             return
 
         participant_id = self.id_input.text().strip()
@@ -204,7 +237,7 @@ class StudySetupWidget(QWidget):
 
     def _begin(self):
         if self.consent_box.isChecked() and self.participant_id is not None:
-            self.study_started.emit(self.participant_id, self.condition)
+            self.study_started.emit(self.participant_id, self.condition, self.task_id, self.rewrites_enabled)
 
     def _decline(self):
         self.window().close()

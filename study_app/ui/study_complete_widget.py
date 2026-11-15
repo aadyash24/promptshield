@@ -31,7 +31,7 @@ class StudyCompleteWidget(QWidget):
         title.setAlignment(Qt.AlignCenter)
         content.addWidget(title)
 
-        message = QLabel("Your final letter was submitted. Thank you for participating.")
+        message = QLabel("Your final document was submitted. Thank you for participating.")
         self.message = message
         message.setWordWrap(True)
         message.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)

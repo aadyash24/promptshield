@@ -22,12 +22,12 @@ class StudySurveyWidget(QWidget):
         self.condition = None
         root = QVBoxLayout(self)
         root.setContentsMargins(24, 20, 24, 20)
-        title = QLabel("Letter submitted — Post-study survey")
+        title = QLabel("Document submitted — Post-study survey")
         title.setObjectName("surveyTitle")
         title.setWordWrap(True)
         root.addWidget(title)
         note = QLabel(
-            "Answer as yourself about your experience playing Maya. Your typed answers "
+            "Answer as yourself about your experience playing your assigned character. Your typed answers "
             "will be saved with your study session when you select Submit survey. "
             "Each question is optional; you can also skip the survey. "
             "Do not include real personal information about yourself or anyone else."
@@ -55,7 +55,7 @@ class StudySurveyWidget(QWidget):
         study_theme().changed.connect(self.apply_styles)
         self.apply_styles()
 
-    def set_condition(self, condition):
+    def set_condition(self, condition, rewrites_enabled=None):
         self.condition = condition
         self.fields = {}
         old = self.scroll.takeWidget()
@@ -64,7 +64,7 @@ class StudySurveyWidget(QWidget):
         body = QWidget()
         layout = QVBoxLayout(body)
         layout.setSpacing(12)
-        for index, (key, question) in enumerate(questions_for(condition), 1):
+        for index, (key, question) in enumerate(questions_for(condition, rewrites_enabled=rewrites_enabled), 1):
             label = QLabel(f"{index}. {question}")
             label.setWordWrap(True)
             label.setTextFormat(Qt.PlainText)

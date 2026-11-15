@@ -1,13 +1,13 @@
 """Versioned post-task questions; common items are identical across conditions."""
 
-SURVEY_VERSION = "disclosure_v1"
+SURVEY_VERSION = "disclosure_v3"
 MAX_RESPONSE_CHARS = 2000
 
 COMMON_QUESTIONS = (
     ("ai_use", "What did you use the AI assistant for during this task? If you did not use it, what led you to that choice?"),
-    ("detail_selection", "How did you decide which details from Maya's profile to include in messages to the AI assistant? What made a detail seem useful or unnecessary?"),
+    ("detail_selection", "How did you decide which details from your assigned profile to include in messages to the AI assistant? What made a detail seem useful or unnecessary?"),
     ("disclosure_changes", "Before sending messages to the AI assistant, did you leave out, remove, or make any personal, medical, or financial details less specific? Describe what you changed and why, or explain why you kept the details as they were."),
-    ("task_friction", "What, if anything, made it difficult to use the AI assistant or finish your letter? Did this affect how much you used the assistant or what you sent?"),
+    ("task_friction", "What, if anything, made it difficult to use the AI assistant or finish your document? Did this affect how much you used the assistant or what you sent?"),
 )
 
 ACTIVE_QUESTIONS = (
@@ -16,5 +16,6 @@ ACTIVE_QUESTIONS = (
 )
 
 
-def questions_for(condition):
-    return COMMON_QUESTIONS + (ACTIVE_QUESTIONS if condition in ("active", "dev") else ())
+def questions_for(condition, rewrites_enabled=None):
+    active = ACTIVE_QUESTIONS if rewrites_enabled is not False else ACTIVE_QUESTIONS[:1]
+    return COMMON_QUESTIONS + (active if condition in ("active", "dev") else ())

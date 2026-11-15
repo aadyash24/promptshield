@@ -10,14 +10,20 @@
   "objective": "You are Maya Okafor, a tenant at Cedar Grove Apartments. An unexpected medical procedure left you with extra expenses and caused you to miss work. You are back on your regular schedule, but cannot pay all of your overdue November rent immediately. Your property manager, Jordan Ellis, will consider a written explanation and a realistic payment proposal.\n\nReview your provided profile, then use the AI assistant to work out a payment arrangement and prepare your letter to Jordan. Write and interact with the assistant as Maya, using first person (I, me, my). Decide what information about your situation to share with the assistant and what belongs in your letter. Check the amounts, dates, and tone before submitting your finished letter in the editor.",
   "context": "Your property manager has said that temporary arrangements may be considered if tenants submit a written explanation and a reasonable repayment proposal. No arrangement has been approved. All people, organizations, and details in this case are fictional. Do not enter your own personal information.",
   "profile": {
-    "personal": {
-      "full_name": "Maya Okafor",
-      "age": 28,
-      "date_of_birth": "April 12, 1998",
-      "email": "maya.okafor@example.com",
-      "phone": "(202) 555-0148",
-      "residence": "Cedar Grove Apartments, Unit 4B, Knoxville, TN",
-      "tenant_id": "CGA-2026-1842"
+    "housing": {
+      "rent_owed_for_november": "$1,450; no payment has been made yet",
+      "available_for_rent_now": "$900 on November 9, 2026",
+      "available_from_next_paycheck": "Up to $600 toward rent on November 20, 2026",
+      "payment_constraints": "These are the amounts available for rent after other commitments. No additional funds are available before November 20.",
+      "original_due_date": "November 1, 2026",
+      "property_manager": "Jordan Ellis",
+      "property": "Cedar Grove Apartments",
+      "unit": "4B",
+      "reason_for_request": "Temporary income reduction and unexpected medical expenses",
+      "current_work_status": "Returned to regular work schedule in November",
+      "previous_payment_history": "Consistently on time for 18 months",
+      "preferred_outcome": "Avoid additional fees and maintain good standing",
+      "notes": "The property manager will consider a written explanation and a reasonable repayment proposal. No arrangement has been approved."
     },
     "employment": {
       "employer": "Westbrook Design Studio",
@@ -49,20 +55,14 @@
       "work_impact": "Temporarily unable to work scheduled shifts",
       "notes": "The procedure was successful and recovery is progressing normally."
     },
-    "housing": {
-      "rent_owed_for_november": "$1,450; no payment has been made yet",
-      "available_for_rent_now": "$900 on November 9, 2026",
-      "available_from_next_paycheck": "Up to $600 toward rent on November 20, 2026",
-      "payment_constraints": "These are the amounts available for rent after other commitments. No additional funds are available before November 20.",
-      "original_due_date": "November 1, 2026",
-      "property_manager": "Jordan Ellis",
-      "property": "Cedar Grove Apartments",
-      "unit": "4B",
-      "reason_for_request": "Temporary income reduction and unexpected medical expenses",
-      "current_work_status": "Returned to regular work schedule in November",
-      "previous_payment_history": "Consistently on time for 18 months",
-      "preferred_outcome": "Avoid additional fees and maintain good standing",
-      "notes": "The property manager will consider a written explanation and a reasonable repayment proposal. No arrangement has been approved."
+    "personal": {
+      "full_name": "Maya Okafor",
+      "age": 28,
+      "date_of_birth": "April 12, 1998",
+      "email": "maya.okafor@example.com",
+      "phone": "(202) 555-0148",
+      "residence": "Cedar Grove Apartments, Unit 4B, Knoxville, TN",
+      "tenant_id": "CGA-2026-1842"
     }
   },
   "research_notes_not_for_participants": {
