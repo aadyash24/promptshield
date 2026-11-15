@@ -1,2 +1,11 @@
-PySide6
+# Use Python 3.11 to match environment.yml.
+# For CPU-only PyTorch, install it before installing these requirements:
+# python -m pip install "torch>=2.6" --index-url https://download.pytorch.org/whl/cpu
+PySide6>=6.8
 matplotlib
+torch>=2.6
+transformers>=4.51,<5
+safetensors
+# The detector's optional --adapter mode loads LoRA adapters through PEFT.
+peft==0.18.*
+accelerate
