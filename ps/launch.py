@@ -74,17 +74,35 @@ def stop_services(services):
 
 
 def find_ollama():
-    candidates = [OLLAMA_EXE, shutil.which("ollama.exe")]
-    if os.environ.get("LOCALAPPDATA"):
+    candidates = [shutil.which("ollama.exe" if sys.platform == "win32" else "ollama")]
+    if sys.platform == "win32":
+        candidates.insert(0, OLLAMA_EXE)
+    if sys.platform == "win32" and os.environ.get("LOCALAPPDATA"):
         candidates.append(Path(os.environ["LOCALAPPDATA"]) / "Programs" / "Ollama" / "ollama.exe")
+    if sys.platform == "darwin":
+        candidates.extend([
+            Path("/Applications/Ollama.app/Contents/Resources/ollama"),
+            Path.home() / "Applications/Ollama.app/Contents/Resources/ollama",
+            Path("/opt/homebrew/bin/ollama"),
+            Path("/usr/local/bin/ollama"),
+        ])
     return next((Path(path) for path in candidates if path and Path(path).is_file()), None)
+
+
+def ollama_environment(ollama):
+    env = os.environ.copy()
+    env["OLLAMA_HOST"] = urlsplit(DEFAULT_OLLAMA_URL).netloc
+    env["OLLAMA_NO_CLOUD"] = "1"
+    if ollama == OLLAMA_EXE:
+        env["OLLAMA_MODELS"] = str(OLLAMA_MODELS)
+    return env
 
 
 def running_service(url):
     try:
         with LOCAL_HTTP.open(url, timeout=2) as response:
             return json.load(response)
-    except URLError:
+    except (URLError, TimeoutError):
         return None
 
 
@@ -176,7 +194,7 @@ def main():
         checkpoint = is_installed(MODEL_DIR / NAME)
         ollama = find_ollama()
         tags_url = f"{DEFAULT_OLLAMA_URL}/api/tags"
-        tags = running_service(tags_url) if gui else None
+        tags = running_service(tags_url)
         report("detector", "installed" if checkpoint else "missing", "b-tok2 installed." if checkpoint else "b-tok2 is missing.")
         report("ollama", "installed" if ollama or tags is not None else "missing",
                "Ollama available." if ollama or tags is not None else "Ollama is missing.")
@@ -185,11 +203,7 @@ def main():
 
         if tags is None:
             check_port("Ollama", DEFAULT_OLLAMA_URL)
-            ollama_env = os.environ.copy()
-            ollama_env["OLLAMA_HOST"] = urlsplit(DEFAULT_OLLAMA_URL).netloc
-            ollama_env["OLLAMA_NO_CLOUD"] = "1"
-            if ollama == OLLAMA_EXE:
-                ollama_env["OLLAMA_MODELS"] = str(OLLAMA_MODELS)
+            ollama_env = ollama_environment(ollama)
             report("ollama", "starting", "Starting Ollama…")
             services.append(("Ollama", subprocess.Popen(
                 [str(ollama), "serve"], env=ollama_env, stdin=subprocess.DEVNULL,
@@ -197,12 +211,12 @@ def main():
             tags = wait_for_json(tags_url, services, closing)
         report("ollama", "ready", "Ollama is responding.")
         if not any(model.get("name") == DEFAULT_MODEL for model in tags.get("models", [])):
-            report("qwen", "missing", f"{DEFAULT_MODEL} is missing. Run ps/setup.ps1 to install it.")
+            report("qwen", "missing", f"{DEFAULT_MODEL} is missing. Run python ps/setup.py to install it.")
             return 3
         report("qwen", "installed", f"{DEFAULT_MODEL} is available.")
 
         health_url = f"{DETECTOR_URL}/health"
-        health = running_service(health_url) if gui else None
+        health = running_service(health_url)
         if health is None:
             check_port("Detector", DETECTOR_URL)
             report("detector", "starting", "Starting b-tok2…")

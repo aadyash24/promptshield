@@ -81,8 +81,32 @@ Logs land in `finetune/study_logs/` (gitignored). `python analyze_logs.py` summa
 
 ## Desktop study app
 
-From the repository root on Windows, create the Conda environment and launch
-the study app.
+The desktop app supports Windows and macOS with Python 3.11. On macOS,
+install and open [Ollama](https://ollama.com/download) first, placing the app in
+Applications. Windows setup can install a portable Ollama automatically.
+
+From the repository root, create a virtual environment:
+
+```powershell
+# Windows (PowerShell)
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+```bash
+# macOS (with Python 3.11 installed)
+python3.11 -m venv .venv
+source .venv/bin/activate
+```
+
+Then, on either system:
+
+```bash
+python -m pip install -r requirements.txt
+python study_app/study_main.py
+```
+
+Alternatively, on Windows, use the Conda environment:
 
 ```powershell
 conda env create -f environment.yml
@@ -93,9 +117,15 @@ python study_app/study_main.py
 The environment includes the desktop UI, session plots, and the Python
 dependencies for the PromptShield detector. The app's setup screen starts the
 detector and Ollama and offers to install any missing runtime or model assets.
-You can also run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File ps/setup.ps1`
+You can also run `python ps/setup.py`
 to set up the b-tok2 checkpoint, Ollama, and `qwen2.5:3b` before opening the app.
 First-time downloads require internet access.
+
+To run the local servers without the desktop app, run `python ps/launch.py`
+after setup. Both launch modes reuse existing local services; shutting down
+the launcher stops only services it started. If macOS setup says Ollama is
+missing, install/open the app and click Retry. Custom Ollama installations
+must put the `ollama` executable on PATH.
 
 If Qwen fails the startup check with Ollama's automatic device selection, setup
 tries a CPU-only alias of the installed model. When that check passes, the app

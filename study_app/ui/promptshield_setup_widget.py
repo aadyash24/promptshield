@@ -124,9 +124,8 @@ class PromptShieldSetupWidget(QWidget):
         self._run("launch", sys.executable, ["-u", str(PS_ROOT / "launch.py"), "--gui"])
 
     def _install(self):
-        self._run("install", "powershell.exe", [
-            "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
-            "-File", str(PS_ROOT / "setup.ps1"), "-JsonProgress",
+        self._run("install", sys.executable, [
+            "-u", str(PS_ROOT / "setup.py"), "--json-progress",
         ])
 
     def _run(self, phase, program, args):
