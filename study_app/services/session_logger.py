@@ -153,6 +153,7 @@ class SessionLogger:
             self.metadata["warning_hover_tracking"] = True
         if interaction_tracking:
             self.metadata["interaction_tracking"] = True
+            self.metadata["warning_dismissal_tracking_version"] = "sentence_context_v1"
         if survey_enabled:
             self.metadata["survey_version"] = SURVEY_VERSION
 

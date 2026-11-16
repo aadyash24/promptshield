@@ -169,6 +169,14 @@ def summarize_session(session):
     metadata = session["metadata"]
     events = session["events"]
     counts = event_counts(events)
+    dismissal_tracking = bool(
+        metadata.get("warning_dismissal_tracking_version")
+        or counts["warning_dismissal_requested"] or counts["warning_dismissed"]
+    )
+    dismissal_reasons = Counter(
+        event.get("details", {}).get("reason")
+        for event in events if event.get("event_type") == "warning_dismissed"
+    )
 
     checks = [
         event for event in events
@@ -223,6 +231,10 @@ def summarize_session(session):
             "warning_displayed", 0
         ),
         "warning_hovers": count_warning_hovers(metadata, counts),
+        "warnings_dismissed": counts["warning_dismissed"] if dismissal_tracking else None,
+        "warnings_misdetected": dismissal_reasons["misdetected"] if dismissal_tracking else None,
+        "warnings_ignored": dismissal_reasons["ignore"] if dismissal_tracking else None,
+        "dismissals_cancelled": counts["warning_dismissal_cancelled"] if dismissal_tracking else None,
         "rewrites_accepted": counts.get(
             "rewrite_accepted", 0
         ),

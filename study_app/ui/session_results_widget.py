@@ -223,6 +223,10 @@ class SessionResultsWindow(QMainWindow):
             ("messages_sent", "Messages Sent"),
             ("documents_submitted", "Documents Submitted"),
             ("manual_removal_messages", "Sent after manual value removal"),
+            ("warnings_dismissed", "Warnings Dismissed"),
+            ("warnings_misdetected", "Reported Non-PII"),
+            ("warnings_ignored", "Warnings Ignored"),
+            ("dismissals_cancelled", "Dismissals Cancelled"),
         ]
 
         self.metric_cards = {}

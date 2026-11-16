@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QSizePolicy,
     QApplication,
+    QSplitter,
 )
 from PySide6.QtCore import Qt, Signal, QTimer, QEvent, QThread, QPoint, QElapsedTimer
 from PySide6.QtGui import QCursor, QFontMetrics, QTextCursor, QTextCharFormat, QColor, QIcon, QPainter, QPixmap
@@ -21,7 +22,9 @@ from ps.rewrite.ollama_rewriter import OllamaRewriter
 from ps.warnings.finding_utils import locate_findings
 from services.chat_backend import ChatBackend
 from ui.theme import study_theme
+from ui.warning_dialog import WarningDismissDialog, warning_category_title
 from study.manual_edits import ManualEditTracker
+from study.warning_dismissals import remap_dismissals
 
 
 class DetectionWorker(QThread):
@@ -83,11 +86,11 @@ class PrivacyWarningPopup(QFrame):
         self.tier = 1
         self.setObjectName("privacyWarningPopup")
         self.setAttribute(Qt.WA_ShowWithoutActivating, True)
-        self.setFixedWidth(350)
+        self.setFixedWidth(360)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(18, 16, 18, 16)
-        layout.setSpacing(12)
+        layout.setContentsMargins(20, 18, 20, 18)
+        layout.setSpacing(10)
 
         self.severity_label = QLabel()
         self.severity_label.setObjectName("privacySeverity")
@@ -95,6 +98,7 @@ class PrivacyWarningPopup(QFrame):
 
         self.heading = QLabel()
         self.heading.setObjectName("privacyWarningHeading")
+        self.heading.setTextFormat(Qt.PlainText)
         self.heading.setWordWrap(True)
         self.description = QLabel()
         self.description.setObjectName("privacyWarningDescription")
@@ -106,10 +110,19 @@ class PrivacyWarningPopup(QFrame):
         layout.addWidget(self.heading)
         layout.addWidget(self.description)
         layout.addWidget(self.advice)
-        self.rewrite_button = QPushButton("Rewrite this detail")
+        actions = QHBoxLayout()
+        actions.setSpacing(8)
+        layout.addSpacing(4)
+        self.rewrite_button = QPushButton("Rewrite")
         self.rewrite_button.setCursor(Qt.PointingHandCursor)
         self.rewrite_button.setFocusPolicy(Qt.NoFocus)
-        layout.addWidget(self.rewrite_button)
+        actions.addWidget(self.rewrite_button, 1)
+        self.dismiss_button = QPushButton("Dismiss warning")
+        self.dismiss_button.setObjectName("dismissWarningButton")
+        self.dismiss_button.setCursor(Qt.PointingHandCursor)
+        self.dismiss_button.setFocusPolicy(Qt.NoFocus)
+        actions.addWidget(self.dismiss_button, 1)
+        layout.addLayout(actions)
         study_theme().changed.connect(self.apply_styles)
 
     def show_finding(self, finding, anchor):
@@ -124,7 +137,7 @@ class PrivacyWarningPopup(QFrame):
             "PERSONAL": "This detail may reveal personally identifying information.",
         }
         self.severity_label.setText(f"Privacy notice · Tier {tier}")
-        self.heading.setText(f"Potential {category.replace('_', ' ').title()} disclosure")
+        self.heading.setText(f"{warning_category_title(category)} disclosure")
         self.description.setText(descriptions.get(
             category, "This text may contain sensitive personal information."
         ))
@@ -156,7 +169,7 @@ class PrivacyWarningPopup(QFrame):
         self.setStyleSheet(theme.stylesheet(f"""
             QFrame#privacyWarningPopup {{
                 background-color: $surface;
-                border: 1px solid $control_border;
+                border: 1px solid $border;
                 border-radius: 12px;
             }}
             QLabel {{ border: none; background: transparent; color: $body; }}
@@ -179,6 +192,8 @@ class PrivacyWarningPopup(QFrame):
             QPushButton:hover {{ background: $hover; border-color: $strong_border; }}
             QPushButton:pressed {{ background: $selection; }}
             QPushButton:disabled {{ background: $disabled_surface; color: $muted; border-color: $border; }}
+            QPushButton#dismissWarningButton {{ background: transparent; color: $muted; border-color: $border; font-weight: normal; }}
+            QPushButton#dismissWarningButton:hover {{ background: $hover; color: $text; border-color: $strong_border; }}
         """))
 
 
@@ -188,6 +203,7 @@ class MessageInput(QTextEdit):
     send_requested = Signal()
     warning_hover_event = Signal(str, object)
     rewrite_requested = Signal(object)
+    dismissal_requested = Signal(object)
 
     SEVERITY_COLORS = {
         1: ("#FEF9C3", "#713F12"),
@@ -209,6 +225,7 @@ class MessageInput(QTextEdit):
         self._warning_dismiss_timer.setInterval(350)
         self._warning_dismiss_timer.timeout.connect(self._dismiss_if_pointer_left)
         self._privacy_popup.rewrite_button.clicked.connect(self._request_popup_rewrite)
+        self._privacy_popup.dismiss_button.clicked.connect(self._request_dismissal)
         self._privacy_popup.installEventFilter(self)
         self.viewport().setMouseTracking(True)
         self.viewport().installEventFilter(self)
@@ -269,11 +286,17 @@ class MessageInput(QTextEdit):
     def set_rewrite_pending(self, pending):
         button = self._privacy_popup.rewrite_button
         button.setEnabled(not pending)
-        button.setText("Rewriting…" if pending else "Rewrite this detail")
+        button.setText("Rewriting…" if pending else "Rewrite")
 
     def _request_popup_rewrite(self):
         if self._popup_finding is not None:
             self.rewrite_requested.emit(self._popup_finding)
+
+    def _request_dismissal(self):
+        if self._popup_finding is not None:
+            finding = dict(self._popup_finding)
+            self.dismiss_warning()
+            self.dismissal_requested.emit(finding)
 
     def _dismiss_if_pointer_left(self):
         if not self._privacy_popup.geometry().contains(QCursor.pos()):
@@ -405,6 +428,10 @@ class ChatWidget(QWidget):
         self._check_queued = False
         self._last_detection_error = None
         self._last_logged_findings = None
+        self._dismissed_findings = {}
+        self._dismissal_draft_text = ""
+        self._submitted_misdetections = set()
+        self._sent_overrides = {}
 
         # Safe rewrite state: reuse the exact spans from the completed draft scan.
         self._last_detection_text = None
@@ -459,13 +486,38 @@ class ChatWidget(QWidget):
         self.messages_layout.setSpacing(16)
         self.messages_layout.setAlignment(Qt.AlignTop)
         self.scroll_area.setWidget(self.messages_container)
-        container_layout.addWidget(self.scroll_area, 1)
+        self.composer_splitter = QSplitter(Qt.Vertical)
+        self.composer_splitter.setObjectName("composerSplitter")
+        self.composer_splitter.setChildrenCollapsible(False)
+        self.composer_splitter.setHandleWidth(14)
+        self.scroll_area.setMinimumHeight(120)
+        self.composer_splitter.addWidget(self.scroll_area)
+        composer = QWidget()
+        composer_layout = QVBoxLayout(composer)
+        composer_layout.setContentsMargins(0, 0, 0, 0)
+        composer_layout.setSpacing(0)
+        self.composer_splitter.addWidget(composer)
+        self.composer_splitter.setStretchFactor(0, 1)
+        self.composer_splitter.setStretchFactor(1, 0)
+        handle = self.composer_splitter.handle(1)
+        handle.setCursor(Qt.SplitVCursor)
+        handle.setToolTip("Drag up or down to resize the message box")
+        handle.setAccessibleName("Resize message box")
+        grip_layout = QHBoxLayout(handle)
+        grip_layout.setContentsMargins(0, 0, 0, 0)
+        grip = QFrame()
+        grip.setObjectName("composerResizeGrip")
+        grip.setFixedSize(40, 4)
+        grip.setAttribute(Qt.WA_TransparentForMouseEvents)
+        grip_layout.addWidget(grip, alignment=Qt.AlignCenter)
+        self.composer_splitter.splitterMoved.connect(lambda *_: self.message_input.dismiss_warning())
+        container_layout.addWidget(self.composer_splitter, 1)
 
         reminder = QLabel(f"You are {self.character_name} for this task. Use only the fictional profile, never your real personal information.")
         reminder.setObjectName("caseReminder")
         reminder.setWordWrap(True)
         reminder.setContentsMargins(20, 10, 20, 0)
-        container_layout.addWidget(reminder)
+        composer_layout.addWidget(reminder)
 
         self.rewrite_notice = QFrame()
         self.rewrite_notice.setObjectName("rewriteNotice")
@@ -478,7 +530,7 @@ class ChatWidget(QWidget):
         undo.clicked.connect(self.undo_rewrite_fallback)
         notice_layout.addWidget(undo)
         self.rewrite_notice.hide()
-        container_layout.addWidget(self.rewrite_notice)
+        composer_layout.addWidget(self.rewrite_notice)
         self.rewrite_notice_timer = QTimer(self)
         self.rewrite_notice_timer.setSingleShot(True)
         self.rewrite_notice_timer.timeout.connect(self.rewrite_notice.hide)
@@ -491,9 +543,9 @@ class ChatWidget(QWidget):
         self.message_input = MessageInput()
         self.message_input.setObjectName("messageInput")
         self.message_input.setPlaceholderText("Message AI Assistant...")
-        self.message_input.setFixedHeight(64)
+        self.message_input.setMinimumHeight(96)
         self.message_input.setAcceptRichText(False)
-        self.message_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.message_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.message_input.send_requested.connect(self.send_message)
         self.send_button = QPushButton("➤")
         self.send_button.setObjectName("sendButton")
@@ -503,9 +555,11 @@ class ChatWidget(QWidget):
         self.send_button.setCursor(Qt.PointingHandCursor)
         self.send_button.clicked.connect(self.send_message)
         self.message_input.rewrite_requested.connect(self.rewrite_safely)
+        self.message_input.dismissal_requested.connect(self.confirm_warning_dismissal)
         input_layout.addWidget(self.message_input)
-        input_layout.addWidget(self.send_button)
-        container_layout.addWidget(input_container)
+        input_layout.addWidget(self.send_button, alignment=Qt.AlignBottom)
+        composer_layout.addWidget(input_container, 1)
+        self.composer_splitter.setSizes([440, 190])
         layout.addWidget(container)
 
         self.add_message(
@@ -529,6 +583,17 @@ class ChatWidget(QWidget):
             self.detection_timer.start()
 
     def on_draft_changed(self):
+        previous = self._dismissed_findings
+        self._dismissed_findings, reset = remap_dismissals(
+            self._dismissal_draft_text, self.message_input.toPlainText(), previous,
+        )
+        self._dismissal_draft_text = self.message_input.toPlainText()
+        if previous:
+            self.study_event.emit("warning_dismissals_reconciled", {
+                "draft_id": self._draft_id, "revision": self._draft_revision + 1,
+                "retained_count": len(self._dismissed_findings),
+                "reset_count": len(reset), "reset_reason": "sentence_context_changed",
+            })
         changes = self._manual_tracker.edit(self.message_input.toPlainText(), self._edit_source)
         if changes:
             self.study_event.emit("draft_sensitive_edit", {
@@ -564,6 +629,8 @@ class ChatWidget(QWidget):
         self.start_detection(text)
 
     def check_sent_message(self, message_id, text):
+        self._sent_overrides[message_id] = (text, self._submitted_misdetections.copy())
+        self._submitted_misdetections.clear()
         if self._detection_worker is None:
             self.start_detection(text, message_id)
         else:
@@ -583,6 +650,17 @@ class ChatWidget(QWidget):
             return
         findings = result["findings"]
         if self._sent_check_id is not None:
+            sent_text, overrides = self._sent_overrides.get(self._sent_check_id, ("", set()))
+            raw_findings = findings
+            corrected = []
+            if overrides:
+                findings = []
+                for item in raw_findings:
+                    spans = locate_findings(sent_text, [item])
+                    if not spans:
+                        findings.append(item)
+                    for span in spans:
+                        (corrected if self.finding_key(span) in overrides else findings).append(span)
             self.finish_sent_detection(
                 "ok",
                 mode=result.get("mode", "unknown"),
@@ -591,6 +669,12 @@ class ChatWidget(QWidget):
                 categories=sorted({f.get("category", "SENSITIVE") for f in findings}),
                 max_tier=max((f.get("tier", 1) for f in findings), default=0),
                 findings_by_category_and_tier=self.finding_breakdown(findings),
+                detector_contains_pii=bool(raw_findings),
+                detector_finding_count=len(raw_findings),
+                detector_findings_by_category_and_tier=self.finding_breakdown(raw_findings),
+                participant_reported_non_pii_count=len(corrected),
+                participant_reported_non_pii=self.finding_breakdown(corrected),
+                classification_source="participant_corrected" if corrected else "detector",
             )
             return
         if revision != self._draft_revision:
@@ -629,7 +713,46 @@ class ChatWidget(QWidget):
         if self.study_condition == "silent":
             self.message_input.clear_highlights()
             return
-        self.message_input.highlight_findings(spans)
+        self.refresh_visible_findings()
+
+    @staticmethod
+    def finding_key(finding):
+        return (finding["start"], finding["end"], finding.get("category", "SENSITIVE"))
+
+    def refresh_visible_findings(self):
+        visible = [
+            f for f in self._last_flagged_spans
+            if self.finding_key(f) not in self._dismissed_findings
+        ] if self.study_condition == "active" else []
+        self.message_input.highlight_findings(visible)
+        suppressed = len(self._last_flagged_spans) - len(visible)
+        if suppressed and self.study_condition == "active":
+            self.study_event.emit("warning_redisplay_suppressed", {
+                "draft_id": self._draft_id, "revision": self._draft_revision,
+                "suppressed_count": suppressed,
+            })
+
+    def confirm_warning_dismissal(self, finding):
+        revision = self._draft_revision
+        details = {
+            "draft_id": self._draft_id, "revision": revision,
+            "category": finding.get("category", "SENSITIVE"),
+            "tier": finding.get("tier", 1),
+            "start": finding["start"], "end": finding["end"],
+        }
+        self.study_event.emit("warning_dismissal_requested", details)
+        dialog = WarningDismissDialog(self, finding=finding)
+        dialog.exec()
+        reason = dialog.choice
+        if reason is None or revision != self._draft_revision:
+            self.study_event.emit("warning_dismissal_cancelled", {
+                **details, "reason": "stale_draft" if revision != self._draft_revision else "cancel",
+            })
+            return
+        self._dismissed_findings[self.finding_key(finding)] = reason
+        self._dismissal_draft_text = self.message_input.toPlainText()
+        self.study_event.emit("warning_dismissed", {**details, "reason": reason})
+        self.refresh_visible_findings()
 
     @staticmethod
     def finding_breakdown(findings):
@@ -661,6 +784,7 @@ class ChatWidget(QWidget):
             self._last_detection_error = error
 
     def finish_sent_detection(self, status, **details):
+        self._sent_overrides.pop(self._sent_check_id, None)
         message_id = self._sent_check_id
         self._sent_check_id = None
         self.sent_detection_completed.emit({"message_id": message_id, "status": status, **details})
@@ -830,6 +954,12 @@ class ChatWidget(QWidget):
         text = self.message_input.toPlainText().strip()
         if not text or self.message_input.isReadOnly() or self._awaiting_reply:
             return
+        leading = len(self.message_input.toPlainText()) - len(self.message_input.toPlainText().lstrip())
+        self._submitted_misdetections = {
+            (start - leading, end - leading, category)
+            for (start, end, category), reason in self._dismissed_findings.items()
+            if reason == "misdetected"
+        }
         context = {
             "draft_id": self._draft_id,
             "manual_edit_observed_scans": self._manual_tracker.scans,
@@ -837,8 +967,9 @@ class ChatWidget(QWidget):
             "revision": self._draft_revision,
             "draft_scan_current": self._last_detection_text == self.message_input.toPlainText(),
             "visible_warning_count": (
-                len(self._last_flagged_spans) if self.study_condition == "active" else 0
+                len(self.message_input.current_findings) if self.study_condition == "active" else 0
             ),
+            "participant_reported_non_pii_count": len(self._submitted_misdetections),
         }
         self.add_message(text, sender="user", show_actions=False)
         self.detection_timer.stop()
@@ -847,6 +978,7 @@ class ChatWidget(QWidget):
         self._last_flagged_spans = []
         self.message_input.clear_highlights()
         self._manual_tracker = ManualEditTracker()
+        self._dismissed_findings.clear()
         self._draft_id += 1
         self.message_input.clear()
         self.message_submitted.emit(text)
@@ -927,6 +1059,7 @@ class ChatWidget(QWidget):
             self.finish_sent_detection("interrupted")
         while self._pending_sent_checks:
             _, message_id = self._pending_sent_checks.popleft()
+            self._sent_overrides.pop(message_id, None)
             self.sent_detection_completed.emit({"message_id": message_id, "status": "interrupted"})
         if self._detection_worker is not None and self._detection_worker.isRunning():
             self._detection_worker.wait()
@@ -964,6 +1097,9 @@ class ChatWidget(QWidget):
             QFrame#assistantBubble { background-color: $subtle; border: none; border-radius: 12px; }
             QLabel#messageText { font-size: 14px; color: $text; background: transparent; border: none; }
             QWidget#inputContainer { background: transparent; }
+            QSplitter#composerSplitter::handle { background: $surface; }
+            QSplitter#composerSplitter::handle:hover { background: $hover; }
+            QFrame#composerResizeGrip { background: $control_border; border: none; border-radius: 2px; }
             QLabel#caseReminder { background: transparent; border-top: 1px solid $border; color: $muted; font-size: 12px; }
             QFrame#rewriteNotice { background: $subtle; border-top: 1px solid $border; }
             QFrame#rewriteNotice QLabel { color: $body; }
