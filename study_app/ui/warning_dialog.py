@@ -26,11 +26,11 @@ class WarningDismissDialog(QDialog):
         self.choice = None
         self.setWindowTitle("Dismiss warning")
         self.setObjectName("warningDismissDialog")
-        self.setFixedWidth(420)
+        self.setFixedWidth(460)
         self.setWindowFlag(Qt.WindowContextHelpButtonHint, False)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(24, 24, 24, 20)
-        layout.setSpacing(10)
+        layout.setSpacing(12)
 
         if finding is not None:
             classification = QLabel(
@@ -45,27 +45,29 @@ class WarningDismissDialog(QDialog):
         heading.setWordWrap(True)
         heading.setObjectName("dismissHeading")
         layout.addWidget(heading)
-        intro = QLabel("Choose why you want to hide this warning.")
+        intro = QLabel("Why are you dismissing it?")
         intro.setWordWrap(True)
         layout.addWidget(intro)
-        layout.addSpacing(8)
+        layout.addSpacing(2)
 
         self.wrong_button = self.add_choice(
-            layout, "Not sensitive", "This was flagged incorrectly. Mark it as non-PII.", "misdetected"
+            layout, "Incorrect detection",
+            "This information is not sensitive.\nThe warning is wrong.", "misdetected"
         )
-        layout.addSpacing(6)
         self.ignore_button = self.add_choice(
-            layout, "Ignore warning", "Hide the warning, but keep it classified as sensitive.", "ignore"
+            layout, "Ignore anyway",
+            "I know this information is sensitive.\nI’m comfortable sharing it anyway.", "ignore"
         )
-        layout.addSpacing(10)
+        layout.addSpacing(2)
         note = QLabel("The warning may return if you edit this sentence.")
         note.setWordWrap(True)
         note.setObjectName("dismissNote")
         layout.addWidget(note)
-        layout.addSpacing(8)
+        layout.addSpacing(2)
         footer = QHBoxLayout()
         footer.addStretch()
-        self.cancel_button = QPushButton("Go back")
+        self.cancel_button = QPushButton("Keep warning")
+        self.cancel_button.setAccessibleName("Keep warning")
         self.cancel_button.setObjectName("dismissCancel")
         self.cancel_button.setDefault(True)
         self.cancel_button.clicked.connect(self.reject)
@@ -76,15 +78,28 @@ class WarningDismissDialog(QDialog):
         self.cancel_button.setFocus()
 
     def add_choice(self, layout, title, explanation, reason):
-        button = QPushButton(title)
+        button = QPushButton()
+        button.setObjectName("dismissChoice")
+        button.setAccessibleName(title)
+        button.setAccessibleDescription(explanation.replace("\n", " "))
+        button.setMinimumHeight(104)
         button.setCursor(Qt.PointingHandCursor)
         button.setAutoDefault(False)
         button.clicked.connect(lambda: self.select(reason))
-        layout.addWidget(button)
+        content = QVBoxLayout(button)
+        content.setContentsMargins(16, 14, 16, 14)
+        content.setSpacing(5)
+        heading = QLabel(title)
+        heading.setObjectName("choiceTitle")
+        heading.setWordWrap(True)
+        heading.setAttribute(Qt.WA_TransparentForMouseEvents)
+        content.addWidget(heading)
         label = QLabel(explanation)
         label.setWordWrap(True)
         label.setObjectName("choiceDescription")
-        layout.addWidget(label)
+        label.setAttribute(Qt.WA_TransparentForMouseEvents)
+        content.addWidget(label)
+        layout.addWidget(button)
         return button
 
     def select(self, reason):
@@ -97,13 +112,19 @@ class WarningDismissDialog(QDialog):
             QLabel { color: $body; font-size: 13px; background: transparent; border: none; }
             QLabel#dismissHeading { color: $heading; font-size: 20px; font-weight: 600; }
             QLabel#dismissClassification { color: $muted; font-size: 13px; font-weight: 600; }
-            QLabel#choiceDescription { color: $muted; font-size: 12px; padding: 0 2px; }
+            QLabel#choiceTitle { color: $heading; font-size: 15px; font-weight: 600; }
+            QLabel#choiceDescription { color: $body; font-size: 13px; }
             QLabel#dismissNote { color: $muted; font-size: 12px; }
             QPushButton { background: $subtle; color: $text; border: 1px solid $border;
                 border-radius: 8px; padding: 11px 14px; font-size: 14px; font-weight: 600; text-align: left; }
             QPushButton:hover { background: $hover; border-color: $strong_border; }
             QPushButton:focus { border-color: $accent_strong; }
             QPushButton:pressed { background: $selection; }
+            QPushButton#dismissChoice { background: $surface; border: 1px solid $control_border;
+                border-radius: 10px; padding: 0; }
+            QPushButton#dismissChoice:hover { background: $subtle; border-color: $strong_border; }
+            QPushButton#dismissChoice:focus { background: $subtle; border: 2px solid $accent_strong; }
+            QPushButton#dismissChoice:pressed { background: $selection; }
             QPushButton#dismissCancel { background: $surface; font-size: 13px;
                 font-weight: normal; text-align: center; padding: 8px 18px; }
         """))

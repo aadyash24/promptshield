@@ -33,22 +33,22 @@ class DismissalTests(unittest.TestCase):
 
     def choose(self, w, label):
         def click(dialog):
-            next(b for b in (dialog.cancel_button, dialog.wrong_button, dialog.ignore_button) if b.text() == label).click()
+            next(b for b in (dialog.cancel_button, dialog.wrong_button, dialog.ignore_button) if b.accessibleName() == label).click()
         with patch.object(WarningDismissDialog, "exec", click):
             w.confirm_warning_dismissal(w.message_input.current_findings[0])
 
     def test_cancel_ignore_and_rescan(self):
         w = self.widget()
-        self.choose(w, "Go back")
+        self.choose(w, "Keep warning")
         self.assertEqual(len(w.message_input.current_findings), 1)
-        self.choose(w, "Ignore warning")
+        self.choose(w, "Ignore anyway")
         w.on_detection_result(w._draft_revision, self.result)
         self.assertEqual(w.message_input.current_findings, [])
         self.assertEqual(list(w._dismissed_findings.values()), ["ignore"])
 
     def test_context_preserves_moves_and_resets_changed_sentence(self):
         w = self.widget()
-        self.choose(w, "Not sensitive")
+        self.choose(w, "Incorrect detection")
         w.message_input.setPlainText("Intro. Alice is here. Different ending.")
         w.detection_timer.stop()
         w.on_detection_result(w._draft_revision, self.result)
@@ -66,7 +66,7 @@ class DismissalTests(unittest.TestCase):
         self.assertEqual(len(reset), 1)
 
     def test_sent_correction_logged_and_analyzed(self):
-        for label, expected in [("Not sensitive", False), ("Ignore warning", True)]:
+        for label, expected in [("Incorrect detection", False), ("Ignore anyway", True)]:
             w = self.widget("  Alice  ")
             with tempfile.TemporaryDirectory() as folder:
                 log = create_logger("TEST", "active", data_dir=folder, interaction_tracking=True)
@@ -90,7 +90,7 @@ class DismissalTests(unittest.TestCase):
 
     def test_other_finding_still_counts_as_pii(self):
         w = self.widget("Alice and Bob")
-        self.choose(w, "Not sensitive")
+        self.choose(w, "Incorrect detection")
         w._sent_check_id = 7
         w._sent_overrides[7] = ("Alice and Bob", set(w._dismissed_findings))
         records = []
@@ -100,4 +100,3 @@ class DismissalTests(unittest.TestCase):
         self.assertTrue(records[0]["contains_pii"])
         self.assertEqual(records[0]["finding_count"], 1)
         self.assertEqual(records[0]["participant_reported_non_pii_count"], 1)
-

@@ -1,7 +1,10 @@
 # Warning dismissal tracking
 
-Each warning offers **Dismiss warning**, followed by **Go back** (also
-Escape/close), **Not sensitive**, and **Ignore warning**.
+Each warning offers **Dismiss warning**, followed by **Keep warning** (also
+Escape/close), **Incorrect detection** (the participant says the information is
+not sensitive), and **Ignore anyway** (the participant recognizes it is sensitive
+but is comfortable sharing it). Each dismissal choice is a single clickable card
+with its explanation inside.
 
 Confirmed decisions suppress that occurrence and category on repeated scans.
 Edits elsewhere preserve the decision and remap its character offsets while its
