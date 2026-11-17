@@ -402,6 +402,12 @@ class ChatWidget(QWidget):
         self.setObjectName("chatWidget")
         self.setAttribute(Qt.WA_StyledBackground, True)
         self.message_bubbles = []
+        self._response_status_row = None
+        self._response_status_label = None
+        self._response_status_step = 0
+        self._response_status_timer = QTimer(self)
+        self._response_status_timer.setInterval(450)
+        self._response_status_timer.timeout.connect(self._animate_response_status)
         self.study_condition = study_condition
         self.detector = PromptShieldClient()
         self.chat_backend = ChatBackend(self)
@@ -944,7 +950,53 @@ class ChatWidget(QWidget):
         self.messages_layout.addWidget(message_row)
         self.message_bubbles.append((bubble, preferred_width))
         self.update_bubble_widths()
+        self.scroll_to_latest()
+
+    def show_response_status(self):
+        if self._response_status_row is not None:
+            return
+        row = QWidget()
+        row.setObjectName("responseStatusRow")
+        row_layout = QHBoxLayout(row)
+        row_layout.setContentsMargins(0, 0, 0, 0)
+        bubble = QFrame()
+        bubble.setObjectName("responseStatusBubble")
+        bubble_layout = QHBoxLayout(bubble)
+        bubble_layout.setContentsMargins(14, 10, 14, 10)
+        label = QLabel("AI is responding")
+        label.setObjectName("responseStatusText")
+        label.setAccessibleName("AI is responding")
+        bubble_layout.addWidget(label)
+        row_layout.addWidget(bubble)
+        row_layout.addStretch()
+        self.messages_layout.addWidget(row)
+        self._response_status_row = row
+        self._response_status_label = label
+        self._response_status_step = 0
+        self._response_status_timer.start()
+        self.scroll_to_latest()
+
+    def _animate_response_status(self):
+        if self._response_status_label is None:
+            return
+        self._response_status_step = (self._response_status_step + 1) % 4
+        self._response_status_label.setText(
+            "AI is responding" + "." * self._response_status_step
+        )
+
+    def hide_response_status(self):
+        self._response_status_timer.stop()
+        row = self._response_status_row
+        self._response_status_row = None
+        self._response_status_label = None
+        if row is not None:
+            self.messages_layout.removeWidget(row)
+            row.deleteLater()
+
+    def scroll_to_latest(self):
+        # Run after Qt recalculates the scroll range for newly added content.
         QTimer.singleShot(0, self.scroll_to_bottom)
+        QTimer.singleShot(40, self.scroll_to_bottom)
 
     def copy_message(self, text):
         QApplication.clipboard().setText(text)
@@ -991,18 +1043,24 @@ class ChatWidget(QWidget):
         self._awaiting_reply = waiting
         self.send_button.setEnabled(not waiting)
         self.send_button.setText("…" if waiting else "➤")
+        if waiting:
+            self.show_response_status()
+        else:
+            self.hide_response_status()
 
     def on_chat_reply(self, text):
         self.study_event.emit("chat_reply_received", {
             "character_count": len(text), "word_count": len(text.split()),
         })
         self._chat_history.append({"role": "assistant", "content": text})
+        self.hide_response_status()
         self.add_message(text)
         self.set_awaiting_reply(False)
 
     def on_chat_error(self):
         self.study_event.emit("chat_reply_failed", {})
         self._chat_history.pop()
+        self.hide_response_status()
         self.add_message(
             "The local assistant could not reply. Please try again.",
             show_actions=False,
@@ -1095,6 +1153,8 @@ class ChatWidget(QWidget):
             QWidget#messagesContainer { background-color: $surface; }
             QFrame#userBubble { background-color: $user_bubble; border: none; border-radius: 12px; }
             QFrame#assistantBubble { background-color: $subtle; border: none; border-radius: 12px; }
+            QFrame#responseStatusBubble { background-color: $subtle; border: 1px solid $border; border-radius: 12px; }
+            QLabel#responseStatusText { color: $muted; font-size: 13px; font-style: italic; background: transparent; border: none; }
             QLabel#messageText { font-size: 14px; color: $text; background: transparent; border: none; }
             QWidget#inputContainer { background: transparent; }
             QSplitter#composerSplitter::handle { background: $surface; }
