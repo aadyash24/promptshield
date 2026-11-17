@@ -94,13 +94,12 @@ class TaskSelectionTests(unittest.TestCase):
             inspector.refresh_sessions()
             self.assertEqual(inspector.session_list.count(), 2)
             inspector.close()
-            with patch("ui.study_overview_widget.load_study", return_value=records):
-                overview = StudyOverviewWindow()
-                self.assertEqual(len(overview.figure.axes[0].patches), 4)
-                overview.task_filter.setCurrentIndex(overview.task_filter.findData("work_arrangement_01"))
-                self.assertEqual(overview.table.rowCount(), 2)
-                self.assertEqual(len(overview.figure.axes[0].patches), 2)
-                overview.close()
+            overview = StudyOverviewWindow(directory)
+            self.assertEqual(overview.sessions_table.rowCount(), 4)
+            overview.task_filter.setCurrentIndex(overview.task_filter.findData("work_arrangement_01"))
+            self.assertEqual(overview.sessions_table.rowCount(), 2)
+            self.assertEqual(len(overview.filtered_entries), 2)
+            overview.close()
 
     def test_historical_task_metadata(self):
         with tempfile.TemporaryDirectory() as directory:
