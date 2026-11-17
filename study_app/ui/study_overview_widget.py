@@ -5,12 +5,13 @@ import json
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
-    QAbstractItemView, QComboBox, QFileDialog, QFrame, QGridLayout, QHBoxLayout,
+    QAbstractItemView, QCheckBox, QComboBox, QFileDialog, QFrame, QGridLayout, QHBoxLayout,
     QHeaderView, QLabel, QLineEdit, QMainWindow, QPlainTextEdit, QPushButton,
-    QSplitter, QTabWidget, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
+    QMenu, QSplitter, QTabWidget, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
+    QWidgetAction,
 )
 from matplotlib.backends.backend_qtagg import (
     FigureCanvasQTAgg as FigureCanvas,
@@ -56,6 +57,52 @@ def breakdown_text(items):
             f"{warning_category_title(item.get('category'))}{tier} ×{item.get('count', 1)}"
         )
     return ", ".join(parts) or "—"
+
+
+class ParticipantFilter(QPushButton):
+    selectionChanged = Signal()
+
+    def __init__(self):
+        super().__init__("All participants")
+        self.setMinimumWidth(150)
+        self.setMenu(QMenu(self))
+        self.checkboxes = {}
+
+    def selected_values(self):
+        return {value for value, box in self.checkboxes.items() if box.isChecked()}
+
+    def set_options(self, values, selected):
+        self.menu().clear()
+        self.checkboxes.clear()
+        clear = self.menu().addAction("All participants")
+        clear.triggered.connect(self.clear_selection)
+        self.menu().addSeparator()
+        for value in values:
+            box = QCheckBox(value, self.menu())
+            box.setChecked(value in selected)
+            action = QWidgetAction(self.menu())
+            action.setDefaultWidget(box)
+            self.menu().addAction(action)
+            self.checkboxes[value] = box
+            box.toggled.connect(self.selection_changed)
+        self.update_label()
+
+    def clear_selection(self):
+        for box in self.checkboxes.values():
+            box.blockSignals(True)
+            box.setChecked(False)
+            box.blockSignals(False)
+        self.selection_changed()
+
+    def update_label(self):
+        values = sorted(self.selected_values())
+        self.setText(values[0] if len(values) == 1 else
+                     f"{len(values)} participants" if values else "All participants")
+        self.setToolTip(", ".join(values) or "All participants")
+
+    def selection_changed(self):
+        self.update_label()
+        self.selectionChanged.emit()
 
 
 class MetricCard(QFrame):
@@ -141,7 +188,10 @@ class StudyOverviewWindow(QMainWindow):
         bar.setSpacing(9)
         self.task_filter = self.add_filter(bar, "Task")
         self.condition_filter = self.add_filter(bar, "Condition")
-        self.participant_filter = self.add_filter(bar, "Participant")
+        bar.addWidget(QLabel("Participants"))
+        self.participant_filter = ParticipantFilter()
+        self.participant_filter.selectionChanged.connect(self.apply_filters)
+        bar.addWidget(self.participant_filter)
         self.session_filter = self.add_filter(bar, "Session")
         self.sort_divider = QFrame()
         self.sort_divider.setObjectName("filterDivider")
@@ -288,6 +338,13 @@ class StudyOverviewWindow(QMainWindow):
         self.survey_table = self.make_table([
             "Participant", "Condition", "Task", "Status", "Question", "Response",
         ], 5)
+        self.survey_table.setWordWrap(True)
+        self.survey_table.setTextElideMode(Qt.ElideNone)
+        self.survey_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
+        self.survey_table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.survey_table.horizontalHeader().sectionResized.connect(
+            self.survey_table.resizeRowsToContents
+        )
         layout.addWidget(self.survey_table)
         self.tabs.addTab(page, "Post-study survey")
 
@@ -369,7 +426,7 @@ class StudyOverviewWindow(QMainWindow):
     def refresh_data(self):
         combos = (
             self.task_filter, self.condition_filter,
-            self.participant_filter, self.session_filter,
+            self.session_filter,
         )
         selected = [combo.currentData() for combo in combos]
         self.entries = []
@@ -385,7 +442,7 @@ class StudyOverviewWindow(QMainWindow):
         self.apply_filters()
 
     def populate_filters(self, selected):
-        combos = [self.task_filter, self.condition_filter, self.participant_filter, self.session_filter]
+        combos = [self.task_filter, self.condition_filter, self.session_filter]
         for combo in combos:
             combo.blockSignals(True)
             combo.clear()
@@ -398,10 +455,10 @@ class StudyOverviewWindow(QMainWindow):
         for value in ("active", "silent"):
             if any(e["record"].get("condition") == value for e in self.entries):
                 self.condition_filter.addItem(value.title(), value)
-        self.participant_filter.addItem("All participants", None)
         participants = {e["record"].get("participant_id") for e in self.entries} - {None}
-        for value in sorted(participants):
-            self.participant_filter.addItem(value, value)
+        self.participant_filter.set_options(
+            sorted(participants), self.participant_filter.selected_values()
+        )
         self.session_filter.addItem("All sessions", None)
         for entry in self.entries:
             record = entry["record"]
@@ -417,13 +474,13 @@ class StudyOverviewWindow(QMainWindow):
     def apply_filters(self):
         task, condition, participant, session_id = (
             self.task_filter.currentData(), self.condition_filter.currentData(),
-            self.participant_filter.currentData(), self.session_filter.currentData(),
+            self.participant_filter.selected_values(), self.session_filter.currentData(),
         )
         self.filtered_entries = [
             entry for entry in self.entries
             if (task is None or entry["record"].get("task_id") == task)
             and (condition is None or entry["record"].get("condition") == condition)
-            and (participant is None or entry["record"].get("participant_id") == participant)
+            and (not participant or entry["record"].get("participant_id") in participant)
             and (session_id is None or entry["record"].get("session_id") == session_id)
         ]
         self.filter_status.setText(f"{len(self.filtered_entries)} of {len(self.entries)} sessions")

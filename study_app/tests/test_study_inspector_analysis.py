@@ -107,3 +107,24 @@ class StudyInspectorAnalysisTests(unittest.TestCase):
             for index in range(window.graph_selector.count()):
                 window.graph_selector.setCurrentIndex(index)
                 self.assertEqual(len(window.chart_figure.axes), 1)
+
+    def test_multiple_participants_filter_and_refresh(self):
+        with tempfile.TemporaryDirectory() as folder:
+            for participant in ("P01", "P02", "P03"):
+                logger = create_logger(participant, "active", data_dir=folder)
+                logger.close()
+            window = StudyOverviewWindow(folder)
+            self.addCleanup(window.close)
+            participant_filter = window.participant_filter
+            participant_filter.checkboxes["P01"].setChecked(True)
+            participant_filter.checkboxes["P03"].setChecked(True)
+            self.assertEqual(
+                {entry["record"]["participant_id"] for entry in window.filtered_entries},
+                {"P01", "P03"},
+            )
+            self.assertEqual(window.sessions_table.rowCount(), 2)
+            window.refresh_data()
+            self.assertEqual(participant_filter.selected_values(), {"P01", "P03"})
+            self.assertEqual(window.sessions_table.rowCount(), 2)
+            participant_filter.clear_selection()
+            self.assertEqual(window.sessions_table.rowCount(), 3)
