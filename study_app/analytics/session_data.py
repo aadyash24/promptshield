@@ -1,6 +1,58 @@
 import json
 from collections import Counter
 from pathlib import Path
+from copy import deepcopy
+
+
+EXCLUDED_CATEGORIES = frozenset({"DATE_OF_BIRTH"})
+
+
+def apply_analysis_exclusions(session):
+    """Return a filtered analysis copy; never modify collected evidence."""
+    session = deepcopy(session)
+    session["metadata"]["analysis_excluded_categories"] = sorted(EXCLUDED_CATEGORIES)
+    events = []
+    for event in session["events"]:
+        details = event.get("details", {})
+        if details.get("category") in EXCLUDED_CATEGORIES:
+            continue
+        for field in ("findings_by_category_and_tier",
+                      "detector_findings_by_category_and_tier",
+                      "participant_reported_non_pii", "manual_removed_values_at_send", "changes"):
+            if field in details:
+                details[field] = [row for row in details[field]
+                                  if row.get("category") not in EXCLUDED_CATEGORIES]
+        if "categories" in details:
+            original = details["categories"]
+            details["categories"] = [c for c in original if c not in EXCLUDED_CATEGORIES]
+            # Draft logs have no per-category counts. Do not invent an exact
+            # remaining count for mixed-category scans.
+            if not details["categories"] and original:
+                details["finding_count"] = 0
+            elif set(original) & EXCLUDED_CATEGORIES and "findings_by_category_and_tier" not in details:
+                details["finding_count_includes_excluded_categories"] = True
+        for breakdown, count, flag in (
+            ("findings_by_category_and_tier", "finding_count", "contains_pii"),
+            ("detector_findings_by_category_and_tier", "detector_finding_count", "detector_contains_pii"),
+            ("participant_reported_non_pii", "participant_reported_non_pii_count", None),
+        ):
+            if breakdown in details:
+                details[count] = sum(int(row.get("count", 1) or 0) for row in details[breakdown])
+                if flag and flag in details:
+                    details[flag] = details[count] > 0
+        if "max_tier" in details and "findings_by_category_and_tier" in details:
+            details["max_tier"] = max((row.get("tier", 0) or 0
+                                      for row in details["findings_by_category_and_tier"]), default=0)
+        if "classification_source" in details:
+            details["classification_source"] = ("participant_corrected" if
+                details.get("participant_reported_non_pii_count") else "detector")
+        if event.get("event_type") == "warning_displayed" and not details.get("finding_count"):
+            continue
+        if event.get("event_type") == "draft_sensitive_edit" and not details.get("changes"):
+            continue
+        events.append(event)
+    session["events"] = events
+    return session
 
 
 DEFAULT_SESSIONS_DIR = (
@@ -10,7 +62,7 @@ DEFAULT_SESSIONS_DIR = (
 )
 
 
-def load_session(folder):
+def load_session(folder, *, exclude_categories=True):
     """Read one session directory without modifying it."""
 
     folder = Path(folder)
@@ -64,12 +116,13 @@ def load_session(folder):
         )
     )
 
-    return {
+    session = {
         "folder": folder,
         "metadata": metadata,
         "events": events,
         "errors": errors,
     }
+    return apply_analysis_exclusions(session) if exclude_categories else session
 
 
 def discover_sessions(root=DEFAULT_SESSIONS_DIR):

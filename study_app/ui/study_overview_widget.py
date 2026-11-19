@@ -18,6 +18,7 @@ from matplotlib.backends.backend_qtagg import (
     NavigationToolbar2QT,
 )
 from matplotlib.figure import Figure
+from matplotlib.ticker import PercentFormatter
 
 from analytics.session_data import DEFAULT_SESSIONS_DIR, discover_sessions, load_session
 from analytics.study_analysis import analyze_session, session_analysis_details
@@ -168,6 +169,9 @@ class StudyOverviewWindow(QMainWindow):
         self.subtitle.setWordWrap(True)
         titles.addWidget(title)
         titles.addWidget(self.subtitle)
+        exclusion_note = QLabel("Analysis excludes DATE_OF_BIRTH. Original session logs are preserved.")
+        exclusion_note.setWordWrap(True)
+        titles.addWidget(exclusion_note)
         header.addLayout(titles, 1)
         choose = QPushButton("Choose folder")
         choose.clicked.connect(self.choose_folder)
@@ -268,10 +272,43 @@ class StudyOverviewWindow(QMainWindow):
             grid.addWidget(card, index // 4, index % 4)
         layout.addLayout(grid)
         splitter = QSplitter(Qt.Vertical)
+        chart_panel = QWidget()
+        chart_layout = QVBoxLayout(chart_panel)
+        chart_layout.setContentsMargins(0, 0, 0, 0)
+        chart_controls = QHBoxLayout()
+        chart_controls.addWidget(self.heading("Condition comparison"))
+        chart_controls.addStretch()
+        chart_controls.addWidget(QLabel("View"))
+        self.comparison_view = QComboBox()
+        self.comparison_view.addItem("Totals", "totals")
+        self.comparison_view.addItem("Mean per session", "means")
+        self.comparison_view.setToolTip(
+            "Show full totals or normalize each condition to its mean session."
+        )
+        self.comparison_view.currentIndexChanged.connect(self.update_comparison_view)
+        chart_controls.addWidget(self.comparison_view)
+        self.percentage_scale_label = QLabel("Percentage axis")
+        chart_controls.addWidget(self.percentage_scale_label)
+        self.percentage_scale = QComboBox()
+        self.percentage_scale.addItem("Full 0–100%", "full")
+        self.percentage_scale.addItem("Fit to data", "fit")
+        self.percentage_scale.setToolTip(
+            "Use a fixed 0–100% percentage axis or zoom it to the visible values."
+        )
+        self.percentage_scale.currentIndexChanged.connect(
+            lambda _index: self.update_chart(
+                [entry["record"] for entry in self.filtered_entries]
+            )
+        )
+        chart_controls.addWidget(self.percentage_scale)
+        self.percentage_scale_label.setVisible(False)
+        self.percentage_scale.setVisible(False)
+        chart_layout.addLayout(chart_controls)
         self.figure = Figure(figsize=(10, 3), tight_layout=True)
         self.canvas = FigureCanvas(self.figure)
         self.canvas.setMinimumHeight(210)
-        splitter.addWidget(self.canvas)
+        chart_layout.addWidget(self.canvas, 1)
+        splitter.addWidget(chart_panel)
         self.sessions_table = self.make_table([
             "Participant", "Condition", "Task", "Version", "Status", "Duration",
             "Messages", "Checked", "With PII", "PII after ignore", "Ignored",
@@ -282,6 +319,12 @@ class StudyOverviewWindow(QMainWindow):
         splitter.setSizes([280, 380])
         layout.addWidget(splitter, 1)
         self.tabs.addTab(page, "Overview")
+
+    def update_comparison_view(self, _index=None):
+        show_percentage_scale = self.comparison_view.currentData() == "means"
+        self.percentage_scale_label.setVisible(show_percentage_scale)
+        self.percentage_scale.setVisible(show_percentage_scale)
+        self.update_chart([entry["record"] for entry in self.filtered_entries])
 
     def setup_messages_tab(self):
         page = QWidget()
@@ -386,7 +429,9 @@ class StudyOverviewWindow(QMainWindow):
         controls.addWidget(QLabel("Graph"))
         self.graph_selector = QComboBox()
         self.graph_selector.addItems([
+            "Custom chart",
             "PII outcomes by session",
+            "PII finding totals by condition",
             "Warning decisions by class",
             "Sent findings by class",
             "Interaction volume by session",
@@ -395,6 +440,27 @@ class StudyOverviewWindow(QMainWindow):
         self.graph_selector.currentIndexChanged.connect(self.update_full_chart)
         self.graph_selector.setMinimumWidth(240)
         controls.addWidget(self.graph_selector)
+        self.custom_x_label = QLabel("X-axis")
+        controls.addWidget(self.custom_x_label)
+        self.custom_x = QComboBox()
+        self.custom_x.addItem("Participant", "participant")
+        self.custom_x.addItem("Condition", "condition")
+        self.custom_x.addItem("Task", "task")
+        self.custom_x.addItem("Session", "session")
+        self.custom_x.currentIndexChanged.connect(self.update_full_chart)
+        controls.addWidget(self.custom_x)
+        self.custom_y_label = QLabel("Y-axis")
+        controls.addWidget(self.custom_y_label)
+        self.custom_y = QComboBox()
+        self.custom_y.addItem("Messages sent", "messages_sent")
+        self.custom_y.addItem("Messages with PII", "pii_messages")
+        self.custom_y.addItem("Raw PII findings", "raw_findings")
+        self.custom_y.addItem("Retained PII findings", "retained_findings")
+        self.custom_y.addItem("Ignored warnings", "ignored")
+        self.custom_y.addItem("Incorrect detections", "misdetected")
+        self.custom_y.addItem("PII messages after ignore", "pii_after_ignore")
+        self.custom_y.currentIndexChanged.connect(self.update_full_chart)
+        controls.addWidget(self.custom_y)
         controls.addStretch()
         layout.addLayout(controls)
         self.graph_help = QLabel()
@@ -594,43 +660,76 @@ class StudyOverviewWindow(QMainWindow):
 
     def update_chart(self, records):
         self.figure.clear()
-        ax = self.figure.add_subplot(111)
+        count_ax = self.figure.add_subplot(111)
+        means_view = self.comparison_view.currentData() == "means"
+        percent_ax = count_ax.twinx() if means_view else None
         colors = study_theme().colors
         self.figure.set_facecolor(colors["surface"])
-        ax.set_facecolor(colors["surface"])
-        ax.tick_params(colors=colors["body"], labelsize=9)
-        ax.xaxis.label.set_color(colors["body"])
-        ax.yaxis.label.set_color(colors["body"])
-        ax.title.set_color(colors["heading"])
-        for spine in ax.spines.values():
-            spine.set_color(colors["border"])
+        for ax in filter(None, (count_ax, percent_ax)):
+            ax.set_facecolor(colors["surface"])
+            ax.tick_params(colors=colors["body"], labelsize=9)
+            ax.xaxis.label.set_color(colors["body"])
+            ax.yaxis.label.set_color(colors["body"])
+            for spine in ax.spines.values():
+                spine.set_color(colors["border"])
+        count_ax.title.set_color(colors["heading"])
         groups = defaultdict(list)
         for record in records:
             groups[record.get("condition", "unknown")].append(record)
         conditions = [name for name in ("active", "silent") if name in groups]
-        metrics = [
-            ("sensitive_message_rate", "PII message rate (%)", True, "#2563EB"),
-            ("warnings_ignored", "Warnings ignored", False, "#B45309"),
-            ("warnings_misdetected", "Incorrect detections", False, "#DC2626"),
-            ("messages_pii_after_ignore", "PII after ignore", False, "#7E22CE"),
-        ]
+        if means_view:
+            metrics = [
+                ("sensitive_message_rate", "PII message rate", percent_ax, 100, "#2563EB"),
+                ("warnings_ignored", "Warnings ignored", count_ax, 1, "#B45309"),
+                ("warnings_misdetected", "Incorrect detections", count_ax, 1, "#DC2626"),
+                ("messages_pii_after_ignore", "PII after ignore", count_ax, 1, "#7E22CE"),
+            ]
+        else:
+            metrics = [
+                ("messages_sent", "Messages sent", count_ax, 1, "#047857"),
+                ("sensitive_messages_sent", "Messages with PII", count_ax, 1, "#2563EB"),
+                ("messages_pii_after_ignore", "PII after ignore", count_ax, 1, "#7E22CE"),
+                ("warnings_ignored", "Warnings ignored", count_ax, 1, "#B45309"),
+                ("warnings_misdetected", "Incorrect detections", count_ax, 1, "#DC2626"),
+            ]
         if not conditions:
-            ax.text(.5, .5, "No sessions match the filters", ha="center", va="center", transform=ax.transAxes)
+            count_ax.text(.5, .5, "No sessions match the filters", ha="center", va="center",
+                          transform=count_ax.transAxes)
         else:
             width = .8 / len(metrics)
-            for metric_index, (field, label, percent, color) in enumerate(metrics):
+            handles = []
+            for metric_index, (field, label, axis, multiplier, color) in enumerate(metrics):
                 values = []
                 for condition in conditions:
                     available = [r[field] for r in groups[condition] if r.get(field) is not None]
-                    value = sum(available) / len(available) if available else 0
-                    values.append(value * 100 if percent else value)
+                    value = (sum(available) / len(available) if means_view else sum(available)) \
+                        if available else 0
+                    values.append(value * multiplier)
                 positions = [i - .4 + width / 2 + metric_index * width for i in range(len(conditions))]
-                ax.bar(positions, values, width, label=label, color=color)
-            ax.set_xticks(range(len(conditions)), [name.title() for name in conditions])
-            ax.set_ylabel("Mean per session")
-            ax.legend(fontsize=8, ncols=2)
-        ax.set_title("Condition comparison for current filters", fontsize=11)
-        ax.grid(axis="y", alpha=.18)
+                bars = axis.bar(positions, values, width, label=label, color=color)
+                handles.append(bars)
+                for bar, value in zip(bars, values):
+                    if value:
+                        text = f"{value:.1f}" if means_view and value % 1 else str(int(value))
+                        axis.text(bar.get_x() + bar.get_width() / 2, bar.get_height(), text,
+                                  ha="center", va="bottom", fontsize=8, color=colors["body"])
+            count_ax.set_xticks(range(len(conditions)), [name.title() for name in conditions])
+            count_ax.legend(handles=[handle[0] for handle in handles],
+                            labels=[metric[1] for metric in metrics], fontsize=8, ncols=2)
+        count_ax.set_ylabel("Mean count per session" if means_view else "Total count")
+        if means_view:
+            percent_ax.set_ylabel("Mean PII message rate")
+            percent_ax.yaxis.set_major_formatter(PercentFormatter(100))
+            if self.percentage_scale.currentData() == "full":
+                percent_ax.set_ylim(0, 100)
+            else:
+                percent_ax.set_ylim(bottom=0)
+        count_ax.set_title(
+            "Condition means for current filters" if means_view
+            else "Condition totals for current filters",
+            fontsize=11,
+        )
+        count_ax.grid(axis="y", alpha=.18)
         self.canvas.draw_idle()
 
     def prepare_chart(self, title, ylabel=""):
@@ -653,9 +752,17 @@ class StudyOverviewWindow(QMainWindow):
             return
         selected = self.graph_selector.currentText()
         descriptions = {
+            "Custom chart": (
+                "Choose any supported X and Y axes. Values sharing an X-axis category are summed, "
+                "and each bar displays its exact total. The global study filters still apply."
+            ),
             "PII outcomes by session": (
                 "Compares messages flagged by the raw detector, messages still classified as PII "
                 "after participant corrections, and messages where retained PII was sent after Ignore anyway."
+            ),
+            "PII finding totals by condition": (
+                "Shows full counts of raw and retained PII findings in sent messages, plus ignored "
+                "warnings and incorrect-detection decisions. Bar labels show the exact totals."
             ),
             "Warning decisions by class": (
                 "Shows which warning classes participants chose to ignore and which they marked as incorrect detections."
@@ -670,9 +777,18 @@ class StudyOverviewWindow(QMainWindow):
                 "Plots all recorded events by elapsed time. Each horizontal lane is one filtered session; colors match the Events tab."
             ),
         }
+        custom_selected = selected == "Custom chart"
+        for widget in (
+            self.custom_x_label, self.custom_x, self.custom_y_label, self.custom_y,
+        ):
+            widget.setVisible(custom_selected)
         self.graph_help.setText(descriptions.get(selected, ""))
-        if selected == "PII outcomes by session":
+        if selected == "Custom chart":
+            self.plot_custom_chart()
+        elif selected == "PII outcomes by session":
             self.plot_pii_outcomes()
+        elif selected == "PII finding totals by condition":
+            self.plot_pii_finding_totals()
         elif selected == "Warning decisions by class":
             self.plot_warning_decisions()
         elif selected == "Sent findings by class":
@@ -682,6 +798,63 @@ class StudyOverviewWindow(QMainWindow):
         else:
             self.plot_event_timeline()
         self.chart_canvas.draw_idle()
+
+    def custom_chart_value(self, entry, metric):
+        record = entry["record"]
+        messages = entry["details"]["messages"]
+        if metric == "messages_sent":
+            return int(record.get("messages_sent") or 0)
+        if metric == "pii_messages":
+            return sum(bool(message.get("contains_pii")) for message in messages)
+        if metric == "raw_findings":
+            return sum(int(message.get("detector_finding_count") or 0)
+                       for message in messages)
+        if metric == "retained_findings":
+            return sum(int(message.get("finding_count") or 0) for message in messages)
+        if metric == "ignored":
+            return sum(int(message.get("ignored_count") or 0) for message in messages)
+        if metric == "misdetected":
+            return sum(int(message.get("misdetected_count") or 0) for message in messages)
+        if metric == "pii_after_ignore":
+            return sum(message.get("outcome") == "PII sent after ignore"
+                       for message in messages)
+        return 0
+
+    def custom_chart_category(self, entry, dimension):
+        record = entry["record"]
+        if dimension == "participant":
+            return record.get("participant_id") or "Unknown"
+        if dimension == "condition":
+            return str(record.get("condition") or "Unknown").title()
+        if dimension == "task":
+            return record.get("task_title") or "Unknown task"
+        session_id = str(record.get("session_id") or "")
+        return f"{record.get('participant_id') or 'Unknown'} · {session_id[:8]}"
+
+    def plot_custom_chart(self):
+        dimension = self.custom_x.currentData()
+        metric = self.custom_y.currentData()
+        x_title = self.custom_x.currentText()
+        y_title = self.custom_y.currentText()
+        ax = self.prepare_chart(f"{y_title} by {x_title.lower()}", y_title)
+        totals = {}
+        for entry in self.filtered_entries:
+            category = self.custom_chart_category(entry, dimension)
+            totals[category] = totals.get(category, 0) + self.custom_chart_value(entry, metric)
+        labels = list(totals)
+        values = [totals[label] for label in labels]
+        if not labels:
+            ax.text(.5, .5, "No sessions match the filters", ha="center", va="center",
+                    transform=ax.transAxes)
+            return
+        bars = ax.bar(range(len(labels)), values, color="#2563EB")
+        for bar, value in zip(bars, values):
+            ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height(), str(value),
+                    ha="center", va="bottom", fontsize=9,
+                    color=study_theme().colors["body"])
+        ax.set_xticks(range(len(labels)), labels)
+        if len(labels) > 5 or dimension in ("task", "session"):
+            ax.tick_params(axis="x", rotation=25)
 
     def session_chart_labels(self):
         labels = []
@@ -728,6 +901,35 @@ class StudyOverviewWindow(QMainWindow):
             ("Raw detector PII", raw, "#2563EB"),
             ("Final PII", final, "#7E22CE"),
             ("PII after ignore", ignored, "#FF8200"),
+        ])
+
+    def plot_pii_finding_totals(self):
+        ax = self.prepare_chart("PII finding totals by condition", "Total count")
+        grouped = defaultdict(list)
+        for entry in self.filtered_entries:
+            grouped[entry["record"].get("condition", "unknown")].append(entry)
+        conditions = [name for name in ("active", "silent") if name in grouped]
+        labels = [name.title() for name in conditions]
+        raw, retained, ignored, misdetected = [], [], [], []
+        for condition in conditions:
+            messages = [
+                message
+                for entry in grouped[condition]
+                for message in entry["details"]["messages"]
+            ]
+            raw.append(sum(int(message.get("detector_finding_count") or 0)
+                           for message in messages))
+            retained.append(sum(int(message.get("finding_count") or 0)
+                                for message in messages))
+            ignored.append(sum(int(message.get("ignored_count") or 0)
+                               for message in messages))
+            misdetected.append(sum(int(message.get("misdetected_count") or 0)
+                                   for message in messages))
+        self.grouped_bars(ax, labels, [
+            ("Raw PII findings", raw, "#2563EB"),
+            ("Retained PII findings", retained, "#7E22CE"),
+            ("Ignored warnings", ignored, "#FF8200"),
+            ("Incorrect detections", misdetected, "#DC2626"),
         ])
 
     def plot_warning_decisions(self):

@@ -277,6 +277,7 @@ def analyze_session(session):
     return {
         "session_id": metadata.get("session_id"),
         "participant_id": participant_id,
+        "analysis_excluded_categories": metadata.get("analysis_excluded_categories", []),
         "condition": condition,
         "status": metadata.get(
             "status", "unknown"
